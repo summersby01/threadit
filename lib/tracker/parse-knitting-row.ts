@@ -143,6 +143,16 @@ export function parseKnittingRow(input: string): ParseResult {
     return { normalizedTokens: [], parsedSteps: [], parseError: null };
   }
 
+  const castOnMatch = trimmed.match(/^CO\s*(\d+)$/i);
+
+  if (castOnMatch) {
+    return {
+      normalizedTokens: [`CO${castOnMatch[1]}`],
+      parsedSteps: [],
+      parseError: null,
+    };
+  }
+
   const starredRepeatMatch = trimmed.match(
     /^\*(.+)\*\s*(?:(?:repeat|반복|x)\s*)?(\d+)$/i,
   );

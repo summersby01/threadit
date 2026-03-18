@@ -11,7 +11,13 @@ export function CreatePatternForm() {
   const draftProject = usePatternRowsStore((state) => state.draftProject);
   const setProjectName = usePatternRowsStore((state) => state.setDraftProjectName);
   const setCraftType = usePatternRowsStore((state) => state.setDraftCraftType);
-  const setWorkMode = usePatternRowsStore((state) => state.setDraftWorkMode);
+  const setStructureType = usePatternRowsStore(
+    (state) => state.setDraftStructureType,
+  );
+  const setStartDirection = usePatternRowsStore(
+    (state) => state.setDraftStartDirection,
+  );
+  const setStartSide = usePatternRowsStore((state) => state.setDraftStartSide);
   const addRow = usePatternRowsStore((state) => state.addDraftRow);
   const duplicateRow = usePatternRowsStore((state) => state.duplicateDraftRow);
   const deleteRow = usePatternRowsStore((state) => state.deleteDraftRow);
@@ -19,10 +25,13 @@ export function CreatePatternForm() {
   const createProject = usePatternRowsStore((state) => state.createProject);
   const projectName = draftProject.name;
   const craftType = draftProject.craftType;
-  const workMode = draftProject.workMode;
+  const structureType = draftProject.structureType;
+  const startDirection = draftProject.startDirection;
+  const startSide = draftProject.startSide;
   const rows = draftProject.rows;
   const isCrochet = craftType === "crochet";
-  const usesRounds = workMode === "round";
+  const isKnitting = craftType === "knitting";
+  const usesRounds = structureType === "round";
   const modeLabel = isCrochet ? messages.create.crochet : messages.create.knitting;
   const rowEyebrow = usesRounds
     ? messages.create.roundEyebrow
@@ -128,56 +137,139 @@ export function CreatePatternForm() {
         </div>
       </PageCard>
 
-      <PageCard>
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <p className="eyebrow">{messages.create.workModeEyebrow}</p>
-            <h2 className="font-serif text-3xl text-thread-900">
-              {messages.create.workModeTitle}
-            </h2>
-            <p className="max-w-2xl text-sm leading-6 text-thread-700">
-              {messages.create.workModeDescription}
-            </p>
-          </div>
+      {isKnitting ? (
+        <PageCard>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{messages.create.knittingSetupEyebrow}</p>
+              <h2 className="font-serif text-3xl text-thread-900">
+                {messages.create.knittingSetupTitle}
+              </h2>
+              <p className="max-w-2xl text-sm leading-6 text-thread-700">
+                {messages.create.knittingSetupDescription}
+              </p>
+            </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setWorkMode("row")}
-              className={`rounded-[1.5rem] border p-5 text-left transition ${
-                workMode === "row"
-                  ? "border-transparent bg-oat-100"
-                  : "border-cream-200 bg-white/70"
-              }`}
-            >
-              <p className="font-serif text-2xl text-thread-900">
-                {messages.create.rowMode}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-thread-700">
-                {messages.create.rowModeDescription}
-              </p>
-            </button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-thread-900">
+                  {messages.create.startDirectionLabel}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setStartDirection("right")}
+                    className={`rounded-[1.5rem] border p-4 text-left transition ${
+                      startDirection === "right"
+                        ? "border-transparent bg-oat-100"
+                        : "border-cream-200 bg-white/70"
+                    }`}
+                  >
+                    <p className="text-base font-medium text-thread-900">
+                      {messages.create.directionRight}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStartDirection("left")}
+                    className={`rounded-[1.5rem] border p-4 text-left transition ${
+                      startDirection === "left"
+                        ? "border-transparent bg-oat-100"
+                        : "border-cream-200 bg-white/70"
+                    }`}
+                  >
+                    <p className="text-base font-medium text-thread-900">
+                      {messages.create.directionLeft}
+                    </p>
+                  </button>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setWorkMode("round")}
-              disabled={craftType !== "crochet"}
-              className={`rounded-[1.5rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                workMode === "round"
-                  ? "border-transparent bg-oat-100"
-                  : "border-cream-200 bg-white/70"
-              }`}
-            >
-              <p className="font-serif text-2xl text-thread-900">
-                {messages.create.roundMode}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-thread-700">
-                {messages.create.roundModeDescription}
-              </p>
-            </button>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-thread-900">
+                  {messages.create.startSideLabel}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setStartSide("RS")}
+                    className={`rounded-[1.5rem] border p-4 text-left transition ${
+                      startSide === "RS"
+                        ? "border-transparent bg-oat-100"
+                        : "border-cream-200 bg-white/70"
+                    }`}
+                  >
+                    <p className="text-base font-medium text-thread-900">RS</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStartSide("WS")}
+                    className={`rounded-[1.5rem] border p-4 text-left transition ${
+                      startSide === "WS"
+                        ? "border-transparent bg-oat-100"
+                        : "border-cream-200 bg-white/70"
+                    }`}
+                  >
+                    <p className="text-base font-medium text-thread-700">WS</p>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </PageCard>
+        </PageCard>
+      ) : null}
+
+      {isCrochet ? (
+        <PageCard>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{messages.create.structureTypeEyebrow}</p>
+              <h2 className="font-serif text-3xl text-thread-900">
+                {messages.create.structureTypeTitle}
+              </h2>
+              <p className="max-w-2xl text-sm leading-6 text-thread-700">
+                {messages.create.structureTypeDescription}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setStructureType("row")}
+                className={`rounded-[1.5rem] border p-5 text-left transition ${
+                  structureType === "row"
+                    ? "border-transparent bg-oat-100"
+                    : "border-cream-200 bg-white/70"
+                }`}
+              >
+                <p className="font-serif text-2xl text-thread-900">
+                  {messages.create.rowMode}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-thread-700">
+                  {messages.create.rowModeDescription}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStructureType("round")}
+                className={`rounded-[1.5rem] border p-5 text-left transition ${
+                  structureType === "round"
+                    ? "border-transparent bg-oat-100"
+                    : "border-cream-200 bg-white/70"
+                }`}
+              >
+                <p className="font-serif text-2xl text-thread-900">
+                  {messages.create.roundMode}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-thread-700">
+                  {messages.create.roundModeDescription}
+                </p>
+              </button>
+            </div>
+          </div>
+        </PageCard>
+      ) : null}
 
       <PageCard>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -210,6 +302,10 @@ export function CreatePatternForm() {
 
           <div className="rounded-[1.75rem] border border-cream-200 bg-white/40">
             {rows.map((row, index) => (
+              (() => {
+                const isCastOnRow = isKnitting && index === 0;
+
+                return (
               <div
                 key={row.id}
                 className={`grid grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 py-4 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:px-5 ${
@@ -217,23 +313,45 @@ export function CreatePatternForm() {
                 }`}
               >
                 <div className="pt-3 text-sm font-medium tracking-[0.08em] text-thread-700">
-                  {String(index + 1).padStart(2, "0")}
+                  {isCastOnRow
+                    ? messages.create.castOnShort
+                    : String(isKnitting ? index : index + 1).padStart(2, "0")}
                 </div>
 
                 <label className="block min-w-0">
                   <span className="sr-only">
-                    {format(rowLabelTemplate, {
-                      number: String(index + 1).padStart(2, "0"),
-                    })}{" "}
-                    {rowInstruction}
+                    {isCastOnRow
+                      ? messages.create.castOnLabel
+                      : `${format(rowLabelTemplate, {
+                          number: String(isKnitting ? index : index + 1).padStart(2, "0"),
+                        })} ${rowInstruction}`}
                   </span>
-                  <input
-                    type="text"
-                    value={row.text}
-                    onChange={(event) => updateRow(row.id, event.target.value)}
-                    placeholder={placeholders[index % placeholders.length]}
-                    className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
-                  />
+                  {isCastOnRow ? (
+                    <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/70 px-4 py-4">
+                      <p className="text-sm font-medium text-thread-900">
+                        {messages.create.castOnLabel}
+                      </p>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={row.text.replace(/^CO\s*/i, "")}
+                        onChange={(event) =>
+                          updateRow(row.id, `CO ${event.target.value || "0"}`)
+                        }
+                        placeholder={messages.create.castOnPlaceholder}
+                        className="mt-3 h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={row.text}
+                      onChange={(event) => updateRow(row.id, event.target.value)}
+                      placeholder={placeholders[index % placeholders.length]}
+                      className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
+                    />
+                  )}
                   {row.parseError ? (
                     <p className="mt-2 text-xs text-thread-700">
                       {messages.create.parseErrorPrefix}: {row.parseError}
@@ -245,7 +363,8 @@ export function CreatePatternForm() {
                   <button
                     type="button"
                     onClick={() => duplicateRow(row.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white"
+                    disabled={isCastOnRow}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={messages.create.duplicateRow}
                     title={messages.create.duplicateRow}
                   >
@@ -265,7 +384,7 @@ export function CreatePatternForm() {
                   <button
                     type="button"
                     onClick={() => deleteRow(row.id)}
-                    disabled={rows.length <= 1}
+                    disabled={rows.length <= 1 || isCastOnRow}
                     className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={messages.create.deleteRow}
                     title={messages.create.deleteRow}
@@ -285,6 +404,8 @@ export function CreatePatternForm() {
                   </button>
                 </div>
               </div>
+                );
+              })()
             ))}
 
             <div className="border-t border-cream-200 px-4 py-4 sm:px-5">

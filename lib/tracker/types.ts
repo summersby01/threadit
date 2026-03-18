@@ -1,5 +1,5 @@
 export type CraftType = "knitting" | "crochet";
-export type WorkMode = "row" | "round";
+export type StructureType = "row" | "round";
 
 export type PatternRow = {
   id: number;

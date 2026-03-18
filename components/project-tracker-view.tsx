@@ -20,6 +20,13 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   const completeProjectLine = usePatternRowsStore(
     (state) => state.completeProjectLine,
   );
+  const toggleProjectDirection = usePatternRowsStore(
+    (state) => state.toggleProjectDirection,
+  );
+  const toggleProjectStartSide = usePatternRowsStore(
+    (state) => state.toggleProjectStartSide,
+  );
+  const setProjectNotes = usePatternRowsStore((state) => state.setProjectNotes);
 
   useEffect(() => {
     selectProject(projectId);
@@ -52,12 +59,16 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   const {
     name,
     craftType,
-    workMode,
-    rows,
+    structureType,
+    startDirection,
+    startSide,
     currentRow,
     currentStep,
     isProjectComplete,
+    notes,
   } = project;
+  const rows = Array.isArray(project.rows) ? project.rows : [];
+  const activityLog = Array.isArray(project.activityLog) ? project.activityLog : [];
   const safeCurrentRow =
     rows.length > 0 ? Math.min(Math.max(currentRow, 0), rows.length - 1) : 0;
   const activeRow = rows[safeCurrentRow];
@@ -75,7 +86,8 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
       ? Math.min(safeCurrentStep + (isProjectComplete ? 0 : 1), activeSteps.length)
       : 0;
   const isCrochet = craftType === "crochet";
-  const usesRounds = workMode === "round";
+  const usesRounds = structureType === "round";
+  const usesKnittingRows = craftType === "knitting" && structureType === "row";
   const modeLabel = isCrochet ? messages.create.crochet : messages.create.knitting;
   const currentRowLabel = usesRounds
     ? messages.tracker.currentRound
@@ -89,6 +101,9 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   const allRowsTitle = usesRounds
     ? messages.tracker.allRoundsTitle
     : messages.tracker.allRowsTitle;
+  const activeSequenceTitle = isCrochet
+    ? messages.tracker.stitchSequenceTitle
+    : stepListTitle;
   const completeLabel = usesRounds
     ? messages.tracker.completeRound
     : messages.tracker.completeRow;
@@ -119,21 +134,78 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
         )
       : 0;
   const hasParsedSteps = totalSteps > 0;
+  const castOnRow = usesKnittingRows ? rows[0] ?? null : null;
+  const displayRows = (usesKnittingRows ? rows.slice(1) : rows)
+    .map((row, rowIndex) => ({
+      row,
+      rowIndex: usesKnittingRows ? rowIndex + 1 : rowIndex,
+    }))
+    .reverse();
+
+  function getLineDirectionMeta(rowIndex: number) {
+    const rowNumber = rowIndex;
+    const isOddRow = rowNumber % 2 === 1;
+    const pointsRight = startDirection === "right" ? isOddRow : !isOddRow;
+    const side = startSide === "RS"
+      ? isOddRow
+        ? "RS"
+        : "WS"
+      : isOddRow
+        ? "WS"
+        : "RS";
+
+    return {
+      arrow: pointsRight ? "→" : "←",
+      side,
+    };
+  }
+
+  const activeDirectionMeta = getLineDirectionMeta(safeCurrentRow);
+
+  function getVisibleKnittingRowNumber(rowIndex: number) {
+    return Math.max(rowIndex, 1);
+  }
+
+  function getLineTitle(rowIndex: number) {
+    return format(rowLabelTemplate, {
+      number: String(
+        usesKnittingRows ? getVisibleKnittingRowNumber(rowIndex) : rowIndex + 1,
+      ).padStart(2, "0"),
+    });
+  }
 
   return (
     <section className="space-y-7 sm:space-y-8">
-      <div className="space-y-3">
-        <p className="eyebrow">{messages.tracker.eyebrow}</p>
-        <h1 className="font-serif text-4xl leading-tight text-thread-900">
-          {messages.tracker.title}
-        </h1>
-        <p className="max-w-2xl text-sm leading-6 text-thread-700">
-          {messages.tracker.description}
-        </p>
-        <div className="inline-flex rounded-full border border-cream-200 bg-white/70 px-4 py-2 text-sm text-thread-700">
-          {messages.tracker.modeEyebrow}: {craftType ? modeLabel : "-"}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-3">
+          <p className="eyebrow">{messages.tracker.eyebrow}</p>
+          <h1 className="font-serif text-4xl leading-tight text-thread-900">
+            {messages.tracker.title}
+          </h1>
+          <div className="inline-flex rounded-full border border-cream-200 bg-white/70 px-4 py-2 text-sm text-thread-700">
+            {messages.tracker.modeEyebrow}: {craftType ? modeLabel : "-"}
+          </div>
+          <div className="text-sm text-thread-700">{name || "-"}</div>
         </div>
-        <div className="text-sm text-thread-700">{name || "-"}</div>
+        <button
+          type="button"
+          onClick={() => router.push(`/projects/${projectId}/edit`)}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-cream-200 bg-white/70 text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+          aria-label={messages.tracker.openPatternEditor}
+          title={messages.tracker.openPatternEditor}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+          >
+            <path d="M12 3.75l1.1 2.23 2.46.36-1.78 1.74.42 2.45L12 9.38 9.8 10.53l.42-2.45L8.44 6.34l2.46-.36L12 3.75z" />
+            <path d="M4.75 13.25l1.59.3.72 1.46 1.47.72.29 1.59-1.21 1.08.12 1.62-1.62.12-1.08 1.21-1.59-.29-.72-1.47-1.46-.72-.3-1.59 1.21-1.08-.12-1.62 1.62-.12 1.08-1.21z" />
+          </svg>
+        </button>
       </div>
 
       <div className="grid gap-4 sm:gap-5">
@@ -150,6 +222,17 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                   ? rowsWithErrors[0].parseError
                   : emptyDescription}
               </p>
+              {castOnRow ? (
+                <div className="mt-3 rounded-[1.25rem] border border-cream-200 bg-oat-100/60 p-4">
+                  <p className="eyebrow">{messages.tracker.castOnLabel}</p>
+                  <p className="mt-2 text-sm text-thread-700">
+                    {messages.tracker.rawInput}: {castOnRow.text || "-"}
+                  </p>
+                  <p className="mt-2 text-sm text-thread-700">
+                    {messages.tracker.castOnDescription}
+                  </p>
+                </div>
+              ) : null}
               <div className="mt-4 grid gap-2 text-sm text-thread-700">
                 <p>{messages.tracker.modeEyebrow}: {craftType ?? "-"}</p>
                 <p>{messages.tracker.parsedRowCount}: {parsedRowCount}</p>
@@ -171,13 +254,78 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
+                <div className="rounded-[1.75rem] border border-sand-100 bg-oat-100/70 p-5 sm:p-6">
                   <p className="eyebrow">{currentRowLabel}</p>
-                  <p className="mt-3 font-serif text-3xl text-thread-900">
-                    {format(rowLabelTemplate, {
-                      number: String(safeCurrentRow + 1).padStart(2, "0"),
-                    })}
+                  <p className="mt-3 font-serif text-4xl text-thread-900">
+                    {getLineTitle(safeCurrentRow)}
                   </p>
+                  {usesKnittingRows ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleProjectDirection(projectId)}
+                        className="inline-flex items-center gap-2 rounded-full border border-cream-200 bg-white/75 px-3 py-1.5 text-sm text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                        aria-label={messages.tracker.reverseDirection}
+                        title={messages.tracker.reverseDirection}
+                      >
+                        <span className="text-base text-thread-900">
+                          {activeDirectionMeta.arrow}
+                        </span>
+                        <span
+                          className={
+                            activeDirectionMeta.side === "RS"
+                              ? "font-medium text-thread-900"
+                              : "text-thread-700"
+                          }
+                        >
+                          {activeDirectionMeta.side}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleProjectStartSide(projectId)}
+                        className="inline-flex items-center rounded-full border border-cream-200 bg-white/65 px-2.5 py-1.5 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                        aria-label={messages.tracker.toggleStartSide}
+                        title={messages.tracker.toggleStartSide}
+                      >
+                        {startSide}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="rounded-[1.75rem] border border-sand-100 bg-oat-100/55 p-5 sm:p-6">
+                  <p className="eyebrow">
+                    {isCrochet
+                      ? messages.tracker.currentStepProgress
+                      : messages.tracker.currentLineTotal}
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    <p className="font-serif text-3xl text-thread-900">
+                      {format(messages.tracker.stepCount, {
+                        current: safeCurrentStep,
+                        total: activeSteps.length,
+                      })}
+                    </p>
+                    <p className="text-sm text-thread-700">
+                      {isCrochet
+                        ? `${messages.tracker.currentStep}: ${activeSteps[visibleCurrentStep] ?? "-"}`
+                        : `${messages.tracker.currentStep}: ${format(
+                            messages.tracker.stepLabel,
+                            {
+                              number: String(currentLineStep).padStart(2, "0"),
+                            },
+                          )}`}
+                    </p>
+                    <div className="h-2 rounded-full bg-cream-200/80">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${currentLineProgressPercent}%`,
+                          backgroundColor: "#B7C2AE",
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
                   <p className="eyebrow">{messages.tracker.overallProgress}</p>
@@ -199,37 +347,11 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
-                  <p className="eyebrow">{messages.tracker.currentLineTotal}</p>
-                  <div className="mt-3 space-y-3">
-                    <p className="text-sm font-medium text-thread-900">
-                      {format(messages.tracker.stepCount, {
-                        current: safeCurrentStep,
-                        total: activeSteps.length,
-                      })}
-                    </p>
-                    <p className="text-sm text-thread-700">
-                      {messages.tracker.currentStep}:{" "}
-                      {format(messages.tracker.stepLabel, {
-                        number: String(currentLineStep).padStart(2, "0"),
-                      })}
-                    </p>
-                    <div className="h-2 rounded-full bg-cream-200/80">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${currentLineProgressPercent}%`,
-                          backgroundColor: "#B7C2AE",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-4">
-                  <p className="eyebrow">{messages.tracker.debugTitle}</p>
+                  <p className="eyebrow">{messages.tracker.trackerSummaryTitle}</p>
                   <p className="mt-3 text-sm text-thread-700">
                     {messages.tracker.modeEyebrow}: {craftType}
                   </p>
@@ -305,77 +427,144 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                   ? rowsWithErrors[0].parseError
                   : emptyDescription}
               </p>
-              {rows.map((row, rowIndex) => (
-                <div
-                  key={row.id}
-                  className="mt-3 rounded-[1.25rem] border border-cream-200 bg-white/60 p-4"
-                >
-                  <p className="eyebrow">
-                    {format(rowLabelTemplate, {
-                      number: String(rowIndex + 1).padStart(2, "0"),
-                    })}
-                  </p>
-                  <p className="mt-2 text-sm text-thread-700">
-                    {messages.tracker.rawInput}: {row.text || "-"}
-                  </p>
-                  {row.parseError ? (
+              {rows.map((row, rowIndex) =>
+                usesKnittingRows && rowIndex === 0 ? null : (
+                  <div
+                    key={row.id}
+                    className="mt-3 rounded-[1.25rem] border border-cream-200 bg-white/60 p-4"
+                  >
+                    <p className="eyebrow">{getLineTitle(rowIndex)}</p>
                     <p className="mt-2 text-sm text-thread-700">
-                      {messages.create.parseErrorPrefix}: {row.parseError}
+                      {messages.tracker.rawInput}: {row.text || "-"}
                     </p>
-                  ) : null}
-                </div>
-              ))}
+                    {row.parseError ? (
+                      <p className="mt-2 text-sm text-thread-700">
+                        {messages.create.parseErrorPrefix}: {row.parseError}
+                      </p>
+                    ) : null}
+                  </div>
+                ),
+              )}
             </div>
           ) : (
             <div className="space-y-6">
               <div>
                 <h2 className="font-serif text-3xl text-thread-900">
-                  {stepListTitle}
+                  {activeSequenceTitle}
                 </h2>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {activeSteps.map((step, index) => {
-                    const isCurrent =
-                      !isProjectComplete && index === visibleCurrentStep;
-                    const isCompleted = index < safeCurrentStep;
+                {isCrochet ? (
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {activeSteps.map((step, index) => {
+                      const isCurrent =
+                        !isProjectComplete && index === visibleCurrentStep;
+                      const isCompleted = index < safeCurrentStep;
 
-                    return (
-                      <span
-                        key={`${activeRow?.id}-${index}`}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium ${
-                          isCurrent
-                            ? "border-transparent text-thread-900"
-                            : isCompleted
-                              ? "border-cream-200 bg-oat-100 text-thread-700"
-                              : "border-cream-200 bg-white/70 text-thread-900"
-                        }`}
-                        style={
-                          isCurrent ? { backgroundColor: "#D8B7AE" } : undefined
-                        }
-                      >
-                        {step}
-                      </span>
-                    );
-                  })}
-                </div>
+                      return (
+                        <div
+                          key={`${activeRow?.id}-${index}`}
+                          className={`rounded-[1.25rem] border px-4 py-4 ${
+                            isCurrent
+                              ? "border-transparent text-thread-900"
+                              : isCompleted
+                                ? "border-cream-200 bg-oat-100 text-thread-700"
+                                : "border-cream-200 bg-white/70 text-thread-900"
+                          }`}
+                          style={
+                            isCurrent ? { backgroundColor: "#D8B7AE" } : undefined
+                          }
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs uppercase tracking-[0.24em] text-thread-700">
+                              {String(index + 1).padStart(2, "0")}
+                            </span>
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cream-200 bg-white/80 text-sm font-medium text-thread-900">
+                              {step.toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {activeSteps.map((step, index) => {
+                      const isCurrent =
+                        !isProjectComplete && index === visibleCurrentStep;
+                      const isCompleted = index < safeCurrentStep;
+
+                      return (
+                        <span
+                          key={`${activeRow?.id}-${index}`}
+                          className={`rounded-full border px-4 py-2 text-sm font-medium ${
+                            isCurrent
+                              ? "border-transparent text-thread-900"
+                              : isCompleted
+                                ? "border-cream-200 bg-oat-100 text-thread-700"
+                                : "border-cream-200 bg-white/70 text-thread-900"
+                          }`}
+                          style={
+                            isCurrent ? { backgroundColor: "#D8B7AE" } : undefined
+                          }
+                        >
+                          {step}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div>
+                {castOnRow ? (
+                  <div className="mb-4 rounded-[1.5rem] border border-cream-200 bg-oat-100/60 p-4">
+                    <p className="eyebrow">{messages.tracker.castOnLabel}</p>
+                    <p className="mt-2 text-sm text-thread-700">
+                      {messages.tracker.rawInput}: {castOnRow.text || "-"}
+                    </p>
+                    <p className="mt-3 text-sm text-thread-700">
+                      {messages.tracker.castOnDescription}
+                    </p>
+                  </div>
+                ) : null}
                 <h3 className="font-serif text-2xl text-thread-900">
                   {allRowsTitle}
                 </h3>
                 <div className="mt-4 grid gap-3">
-                  {rows.map((row, rowIndex) => (
+                    {displayRows.map(({ row, rowIndex }) => {
+                      const directionMeta = getLineDirectionMeta(rowIndex);
+                      const isCurrentRow = rowIndex === safeCurrentRow;
+                      const lineTitle = getLineTitle(rowIndex);
+
+                    return (
                     <div
                       key={row.id}
-                      className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4"
+                      className={`rounded-[1.5rem] border p-4 transition ${
+                        isCurrentRow
+                          ? "border-sand-100 bg-oat-100/80 p-5"
+                          : "border-cream-200 bg-white/60"
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="eyebrow">
-                            {format(rowLabelTemplate, {
-                              number: String(rowIndex + 1).padStart(2, "0"),
-                            })}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="eyebrow">{lineTitle}</p>
+                            {usesKnittingRows ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-cream-200 bg-white/70 px-2.5 py-1 text-xs text-thread-700">
+                                <span className="text-sm text-thread-900">
+                                  {directionMeta.arrow}
+                                </span>
+                                <span
+                                  className={
+                                    directionMeta.side === "RS"
+                                      ? "font-medium text-thread-900"
+                                      : "text-thread-700"
+                                  }
+                                >
+                                  {directionMeta.side}
+                                </span>
+                              </span>
+                            ) : null}
+                          </div>
                           <p className="mt-2 text-sm text-thread-700">
                             {messages.tracker.rawInput}: {row.text || "-"}
                           </p>
@@ -440,7 +629,8 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                         </p>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -453,16 +643,16 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                     {rowsWithErrors.map((row) => {
                       const rowIndex = rows.findIndex((item) => item.id === row.id);
 
+                      if (usesKnittingRows && rowIndex === 0) {
+                        return null;
+                      }
+
                       return (
                         <div
                           key={row.id}
                           className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4"
                         >
-                          <p className="eyebrow">
-                            {format(rowLabelTemplate, {
-                              number: String(rowIndex + 1).padStart(2, "0"),
-                            })}
-                          </p>
+                          <p className="eyebrow">{getLineTitle(rowIndex)}</p>
                           <p className="mt-2 text-sm text-thread-700">
                             {messages.tracker.rawInput}: {row.text || "-"}
                           </p>
@@ -475,40 +665,50 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                   </div>
                 </div>
               ) : null}
-
               <div>
                 <h3 className="font-serif text-2xl text-thread-900">
-                  {messages.tracker.debugTitle}
+                  {messages.tracker.notesTitle}
                 </h3>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.currentRowIndex}</p>
-                    <p className="mt-3 text-sm text-thread-900">{safeCurrentRow}</p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.currentStepIndex}</p>
-                    <p className="mt-3 text-sm text-thread-900">{safeCurrentStep}</p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.isProjectComplete}</p>
-                    <p className="mt-3 text-sm text-thread-900">
-                      {String(isProjectComplete)}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.totalRows}</p>
-                    <p className="mt-3 text-sm text-thread-900">{totalRows}</p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.totalStepCount}</p>
-                    <p className="mt-3 text-sm text-thread-900">{totalSteps}</p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-cream-200 bg-white/60 p-4">
-                    <p className="eyebrow">{messages.tracker.activeRowStepCount}</p>
-                    <p className="mt-3 text-sm text-thread-900">{activeSteps.length}</p>
-                  </div>
+                <div className="mt-4 rounded-[1.75rem] border border-cream-200 bg-white/60 p-5">
+                  <p className="text-sm leading-6 text-thread-700">
+                    {messages.tracker.notesDescription}
+                  </p>
+                  <textarea
+                    value={notes}
+                    onChange={(event) => setProjectNotes(projectId, event.target.value)}
+                    placeholder={messages.tracker.notesPlaceholder}
+                    className="mt-4 min-h-40 w-full resize-none rounded-[1.5rem] border border-cream-200 bg-cream-50/80 px-4 py-4 text-sm leading-7 text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100 focus:bg-white"
+                  />
                 </div>
               </div>
+
+              {activityLog.length > 0 ? (
+                <div>
+                  <h3 className="font-serif text-2xl text-thread-900">
+                    {messages.tracker.activityTitle}
+                  </h3>
+                  <div className="mt-4 rounded-[1.75rem] border border-cream-200 bg-white/60 p-5">
+                    <div className="space-y-3">
+                      {activityLog.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-cream-200 bg-cream-50/70 px-4 py-3"
+                        >
+                          <span className="text-sm font-medium text-thread-900">
+                            {entry.label}
+                          </span>
+                          <span className="text-xs text-thread-700">
+                            {new Date(entry.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </PageCard>
