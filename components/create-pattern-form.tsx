@@ -1,9 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/i18n-provider";
 import { PageCard } from "@/components/page-card";
 import { usePatternRowsStore } from "@/stores/use-pattern-rows-store";
+
+type PatternHelperType =
+  | "rib-1x1"
+  | "rib-2x2"
+  | "stockinette"
+  | "garter"
+  | "seed";
+type StitchType = "K" | "P";
 
 export function CreatePatternForm() {
   const { format, messages } = useI18n();
@@ -55,6 +64,130 @@ export function CreatePatternForm() {
   const rowsDescription = usesRounds
     ? messages.create.crochetRowsDescription
     : messages.create.rowsDescription;
+  const [openPatternHelperRowId, setOpenPatternHelperRowId] = useState<number | null>(
+    null,
+  );
+  const [patternType, setPatternType] = useState<PatternHelperType>("rib-1x1");
+  const [patternStitchCount, setPatternStitchCount] = useState("");
+  const [seedStartingStitch, setSeedStartingStitch] = useState<StitchType>("K");
+  const [patternHelperError, setPatternHelperError] = useState("");
+
+  function getKnittingRowSide(rowIndex: number) {
+    const rowNumber = rowIndex;
+    const isOddRow = rowNumber % 2 === 1;
+
+    return startSide === "RS"
+      ? isOddRow
+        ? "RS"
+        : "WS"
+      : isOddRow
+        ? "WS"
+        : "RS";
+  }
+
+  function openPatternHelper(rowId: number) {
+    setOpenPatternHelperRowId((current) => (current === rowId ? null : rowId));
+    setPatternType("rib-1x1");
+    setPatternStitchCount("");
+    setSeedStartingStitch("K");
+    setPatternHelperError("");
+  }
+
+  function buildAlternatingInstruction(
+    firstStitch: StitchType,
+    secondStitch: StitchType,
+    stitchCount: number,
+  ) {
+    const pairCount = Math.floor(stitchCount / 2);
+    const hasRemainder = stitchCount % 2 === 1;
+    const repeated = `${firstStitch}1, ${secondStitch}1 repeat ${pairCount}`;
+
+    if (pairCount === 0) {
+      return `${firstStitch}1`;
+    }
+
+    return hasRemainder ? `${repeated}, ${firstStitch}1` : repeated;
+  }
+
+  function buildPatternInstruction(
+    nextPatternType: PatternHelperType,
+    stitchCount: number,
+    rowIndex: number,
+  ) {
+    if (nextPatternType === "rib-1x1") {
+      if (stitchCount % 2 !== 0) {
+        return {
+          error: messages.create.patternInvalidEven,
+          instruction: null,
+        };
+      }
+
+      return {
+        error: "",
+        instruction: `K1, P1 repeat ${stitchCount / 2}`,
+      };
+    }
+
+    if (nextPatternType === "rib-2x2") {
+      if (stitchCount % 4 !== 0) {
+        return {
+          error: messages.create.patternInvalidDivisibleByFour,
+          instruction: null,
+        };
+      }
+
+      return {
+        error: "",
+        instruction: `K2, P2 repeat ${stitchCount / 4}`,
+      };
+    }
+
+    if (nextPatternType === "stockinette") {
+      const side = getKnittingRowSide(rowIndex);
+
+      return {
+        error: "",
+        instruction: `${side === "RS" ? "K" : "P"}${stitchCount}`,
+      };
+    }
+
+    if (nextPatternType === "garter") {
+      return {
+        error: "",
+        instruction: `K${stitchCount}`,
+      };
+    }
+
+    return {
+      error: "",
+      instruction: buildAlternatingInstruction(
+        seedStartingStitch,
+        seedStartingStitch === "K" ? "P" : "K",
+        stitchCount,
+      ),
+    };
+  }
+
+  function applyPatternHelper(rowId: number, rowIndex: number) {
+    const stitchCount = Number.parseInt(patternStitchCount, 10);
+
+    if (Number.isNaN(stitchCount) || stitchCount <= 0) {
+      setPatternHelperError(messages.create.patternInvalidStitchCount);
+      return;
+    }
+
+    const result = buildPatternInstruction(patternType, stitchCount, rowIndex);
+
+    if (result.error || !result.instruction) {
+      setPatternHelperError(result.error);
+      return;
+    }
+
+    updateRow(rowId, result.instruction);
+    setOpenPatternHelperRowId(null);
+    setPatternHelperError("");
+    setPatternStitchCount("");
+  }
 
   function handleStartTracking() {
     const projectId = createProject();
@@ -344,13 +477,115 @@ export function CreatePatternForm() {
                       />
                     </div>
                   ) : (
-                    <input
-                      type="text"
-                      value={row.text}
-                      onChange={(event) => updateRow(row.id, event.target.value)}
-                      placeholder={placeholders[index % placeholders.length]}
-                      className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
-                    />
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={row.text}
+                        onChange={(event) => updateRow(row.id, event.target.value)}
+                        placeholder={placeholders[index % placeholders.length]}
+                        className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
+                      />
+                      {isKnitting ? (
+                        <div className="space-y-3">
+                          <button
+                            type="button"
+                            onClick={() => openPatternHelper(row.id)}
+                            className="inline-flex h-9 items-center rounded-full border border-cream-200 bg-white/70 px-3 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                          >
+                            {messages.create.patternQuickInput}
+                          </button>
+                          {openPatternHelperRowId === row.id ? (
+                            <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/55 p-3">
+                              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
+                                <label className="space-y-2">
+                                  <span className="text-xs text-thread-700">
+                                    {messages.create.patternTypeLabel}
+                                  </span>
+                                  <select
+                                    value={patternType}
+                                    onChange={(event) =>
+                                      setPatternType(
+                                        event.target.value as PatternHelperType,
+                                      )
+                                    }
+                                    className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                  >
+                                    <option value="rib-1x1">
+                                      {messages.create.pattern1x1Rib}
+                                    </option>
+                                    <option value="rib-2x2">
+                                      {messages.create.pattern2x2Rib}
+                                    </option>
+                                    <option value="stockinette">
+                                      {messages.create.patternStockinette}
+                                    </option>
+                                    <option value="garter">
+                                      {messages.create.patternGarter}
+                                    </option>
+                                    <option value="seed">
+                                      {messages.create.patternSeedStitch}
+                                    </option>
+                                  </select>
+                                </label>
+                                <label className="space-y-2">
+                                  <span className="text-xs text-thread-700">
+                                    {messages.create.totalStitchCountLabel}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    inputMode="numeric"
+                                    value={patternStitchCount}
+                                    onChange={(event) => {
+                                      setPatternStitchCount(event.target.value);
+                                      setPatternHelperError("");
+                                    }}
+                                    className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => applyPatternHelper(row.id, index)}
+                                  className="inline-flex h-10 items-center justify-center rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 transition hover:border-thread-700/30 hover:bg-white"
+                                >
+                                  {messages.create.applyPattern}
+                                </button>
+                              </div>
+                              {patternType === "seed" ? (
+                                <div className="mt-3 max-w-[180px]">
+                                  <label className="space-y-2">
+                                    <span className="text-xs text-thread-700">
+                                      {messages.create.startingStitchLabel}
+                                    </span>
+                                    <select
+                                      value={seedStartingStitch}
+                                      onChange={(event) =>
+                                        setSeedStartingStitch(
+                                          event.target.value as StitchType,
+                                        )
+                                      }
+                                      className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                    >
+                                      <option value="K">
+                                        {messages.create.stitchKnit}
+                                      </option>
+                                      <option value="P">
+                                        {messages.create.stitchPurl}
+                                      </option>
+                                    </select>
+                                  </label>
+                                </div>
+                              ) : null}
+                              {patternHelperError ? (
+                                <p className="mt-2 text-xs text-thread-700">
+                                  {patternHelperError}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
                   )}
                   {row.parseError ? (
                     <p className="mt-2 text-xs text-thread-700">

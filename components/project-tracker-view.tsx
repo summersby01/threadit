@@ -161,6 +161,9 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   }
 
   const activeDirectionMeta = getLineDirectionMeta(safeCurrentRow);
+  const nextDirectionLabel =
+    startDirection === "right" ? "←로 변경" : "→로 변경";
+  const nextSideLabel = startSide === "RS" ? "WS로 변경" : "RS로 변경";
 
   function getVisibleKnittingRowNumber(rowIndex: number) {
     return Math.max(rowIndex, 1);
@@ -260,14 +263,8 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                     {getLineTitle(safeCurrentRow)}
                   </p>
                   {usesKnittingRows ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleProjectDirection(projectId)}
-                        className="inline-flex items-center gap-2 rounded-full border border-cream-200 bg-white/75 px-3 py-1.5 text-sm text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
-                        aria-label={messages.tracker.reverseDirection}
-                        title={messages.tracker.reverseDirection}
-                      >
+                    <div className="mt-3 space-y-3">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-cream-200 bg-white/75 px-3 py-1.5 text-sm text-thread-700">
                         <span className="text-base text-thread-900">
                           {activeDirectionMeta.arrow}
                         </span>
@@ -280,16 +277,27 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                         >
                           {activeDirectionMeta.side}
                         </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleProjectStartSide(projectId)}
-                        className="inline-flex items-center rounded-full border border-cream-200 bg-white/65 px-2.5 py-1.5 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
-                        aria-label={messages.tracker.toggleStartSide}
-                        title={messages.tracker.toggleStartSide}
-                      >
-                        {startSide}
-                      </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleProjectDirection(projectId)}
+                          className="inline-flex items-center rounded-full border border-cream-200 bg-white/65 px-3 py-1.5 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                          aria-label={nextDirectionLabel}
+                          title={nextDirectionLabel}
+                        >
+                          {nextDirectionLabel}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleProjectStartSide(projectId)}
+                          className="inline-flex items-center rounded-full border border-cream-200 bg-white/65 px-3 py-1.5 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                          aria-label={nextSideLabel}
+                          title={nextSideLabel}
+                        >
+                          {nextSideLabel}
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                 </div>

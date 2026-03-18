@@ -164,6 +164,17 @@ export function parseKnittingRow(input: string): ParseResult {
     );
   }
 
+  const groupedRepeatMatch = trimmed.match(
+    /^\((.+)\)\s*(?:repeat|반복|x)\s*(\d+)$/i,
+  );
+
+  if (groupedRepeatMatch) {
+    return expandRepeatedKnittingSequence(
+      groupedRepeatMatch[1],
+      Number.parseInt(groupedRepeatMatch[2], 10),
+    );
+  }
+
   const plainRepeatMatch = trimmed.match(
     /^(.+?)\s*(?:repeat|반복|x)\s*(\d+)$/i,
   );
