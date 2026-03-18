@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-cream-100 text-thread-900 antialiased;
+  font-family: var(--font-sans), sans-serif;
+  background-image:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.95), transparent 38%),
+    linear-gradient(180deg, #fffdf8 0%, #F5F3EE 100%);
+}
+
+a {
+  @apply transition-colors duration-200;
+}
+
+::selection {
+  background: rgba(183, 123, 93, 0.22);
+}
+
+@layer utilities {
+  .soft-panel {
+    @apply rounded-4xl border border-white/80 bg-white/80 shadow-soft backdrop-blur-sm;
+  }
+}
