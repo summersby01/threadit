@@ -26,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${sans.variable} ${serif.variable} font-sans`}>
+      <body
+        suppressHydrationWarning
+        className={`${sans.variable} ${serif.variable} font-sans`}
+      >
         <I18nProvider>
           <div className="min-h-screen bg-soft-grid bg-[size:24px_24px]">
             <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 pb-12 pt-5 sm:px-6 lg:px-8">

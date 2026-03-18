@@ -182,7 +182,7 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-3">
           <p className="eyebrow">{messages.tracker.eyebrow}</p>
-          <h1 className="font-serif text-4xl leading-tight text-thread-900">
+          <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-thread-900 sm:text-3xl">
             {messages.tracker.title}
           </h1>
           <div className="inline-flex rounded-full border border-cream-200 bg-white/70 px-4 py-2 text-sm text-thread-700">

@@ -36,11 +36,11 @@ input::placeholder {
   }
 
   .pill-button {
-    @apply inline-flex h-11 items-center justify-center rounded-full border border-cream-200 bg-cream-50 px-4 text-sm font-medium text-thread-900;
+    @apply inline-flex items-center justify-center rounded-full border border-cream-200 bg-cream-50 px-4 py-2 text-sm font-medium text-thread-900;
   }
 
   .pill-button-accent {
-    @apply inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-medium text-thread-900;
+    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-thread-900;
     border: 1px solid transparent;
     background-color: #d8b7ae;
   }

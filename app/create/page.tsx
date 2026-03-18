@@ -10,7 +10,7 @@ export default function CreatePage() {
     <section className="space-y-7 sm:space-y-8">
       <div className="space-y-3">
         <p className="eyebrow">{messages.create.eyebrow}</p>
-        <h1 className="font-serif text-4xl leading-tight text-thread-900">
+        <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-thread-900 sm:text-3xl">
           {messages.create.title}
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-thread-700">
