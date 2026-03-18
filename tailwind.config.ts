@@ -13,25 +13,38 @@ const config: Config = {
       },
       colors: {
         cream: {
-          50: "#fffdf8",
-          100: "#F5F3EE",
-          200: "#f3e7d7",
+          50: "#FBF7F1",
+          100: "#F7F2EA",
+          200: "#E7DED2",
+        },
+        oat: {
+          100: "#F2E8DA",
+          200: "#E8D8A8",
+        },
+        sage: {
+          100: "#B7C2AE",
+        },
+        blush: {
+          100: "#D8B7AE",
+        },
+        sand: {
+          100: "#B69B86",
         },
         thread: {
-          500: "#b77b5d",
-          700: "#7a4d35",
-          900: "#34211b",
+          500: "#B69B86",
+          700: "#6F6257",
+          900: "#2B241F",
         },
       },
       boxShadow: {
-        soft: "0 18px 50px -28px rgba(90, 63, 42, 0.32)",
+        soft: "0 10px 30px -26px rgba(43, 36, 31, 0.18)",
       },
       borderRadius: {
         "4xl": "2rem",
       },
       backgroundImage: {
         "soft-grid":
-          "radial-gradient(circle at 1px 1px, rgba(122, 77, 53, 0.08) 1px, transparent 0)",
+          "radial-gradient(circle at 1px 1px, rgba(111, 98, 87, 0.05) 1px, transparent 0)",
       },
     },
   },

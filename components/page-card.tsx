@@ -7,6 +7,6 @@ type PageCardProps = {
 
 export function PageCard({ children, className = "" }: PageCardProps) {
   return (
-    <div className={`soft-panel p-6 sm:p-8 ${className}`.trim()}>{children}</div>
+    <div className={`soft-panel p-5 sm:p-7 ${className}`.trim()}>{children}</div>
   );
 }

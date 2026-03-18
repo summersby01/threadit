@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
+import { I18nProvider } from "@/components/i18n-provider";
 import { SiteHeader } from "@/components/site-header";
 
 const sans = DM_Sans({
@@ -15,7 +16,7 @@ const serif = Fraunces({
 
 export const metadata: Metadata = {
   title: "Threadit",
-  description: "A knitting pattern tracker app.",
+  description: "뜨개 패턴을 차분하게 정리하는 앱입니다.",
 };
 
 export default function RootLayout({
@@ -24,14 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body className={`${sans.variable} ${serif.variable} font-sans`}>
-        <div className="min-h-screen bg-soft-grid bg-[size:22px_22px]">
-          <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-            <SiteHeader />
-            <main className="flex-1 pt-8">{children}</main>
+        <I18nProvider>
+          <div className="min-h-screen bg-soft-grid bg-[size:24px_24px]">
+            <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 pb-12 pt-5 sm:px-6 lg:px-8">
+              <SiteHeader />
+              <main className="flex-1 pt-8 sm:pt-10">{children}</main>
+            </div>
           </div>
-        </div>
+        </I18nProvider>
       </body>
     </html>
   );

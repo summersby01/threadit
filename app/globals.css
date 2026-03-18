@@ -10,20 +10,38 @@ body {
   @apply bg-cream-100 text-thread-900 antialiased;
   font-family: var(--font-sans), sans-serif;
   background-image:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.95), transparent 38%),
-    linear-gradient(180deg, #fffdf8 0%, #F5F3EE 100%);
+    radial-gradient(circle at top, rgba(255, 251, 245, 0.92), transparent 34%),
+    linear-gradient(180deg, #fbf7f1 0%, #f7f2ea 100%);
 }
 
 a {
-  @apply transition-colors duration-200;
+  @apply transition-all duration-200;
+}
+
+input::placeholder {
+  color: rgba(111, 98, 87, 0.72);
 }
 
 ::selection {
-  background: rgba(183, 123, 93, 0.22);
+  background: rgba(216, 183, 174, 0.38);
 }
 
 @layer utilities {
   .soft-panel {
-    @apply rounded-4xl border border-white/80 bg-white/80 shadow-soft backdrop-blur-sm;
+    @apply rounded-4xl border border-cream-200 bg-cream-50 shadow-soft;
+  }
+
+  .eyebrow {
+    @apply text-[11px] uppercase tracking-[0.32em] text-thread-700;
+  }
+
+  .pill-button {
+    @apply inline-flex h-11 items-center justify-center rounded-full border border-cream-200 bg-cream-50 px-4 text-sm font-medium text-thread-900;
+  }
+
+  .pill-button-accent {
+    @apply inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-medium text-thread-900;
+    border: 1px solid transparent;
+    background-color: #d8b7ae;
   }
 }
