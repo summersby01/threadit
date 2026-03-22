@@ -30,10 +30,9 @@ export default function HomePage() {
   }
 
   function renderProjectCard(project: (typeof projects)[number], isCompleted: boolean) {
-    const totalSteps = project.rows.reduce(
-      (sum, row) => sum + row.parsedSteps.length,
-      0,
-    );
+    const isProgressMode = project.trackingMode === "progress";
+    const isCounterMode = project.trackingMode === "counter";
+    const totalSteps = project.rows.reduce((sum, row) => sum + row.parsedSteps.length, 0);
     const safeCurrentRow =
       project.rows.length > 0
         ? Math.min(Math.max(project.currentRow, 0), project.rows.length - 1)
@@ -43,23 +42,45 @@ export default function HomePage() {
     const completedBeforeRow = project.rows
       .slice(0, safeCurrentRow)
       .reduce((sum, row) => sum + row.parsedSteps.length, 0);
-    const completedSteps = project.isProjectComplete
+    const detailedCompletedSteps = project.isProjectComplete
       ? totalSteps
       : completedBeforeRow + project.currentStep;
-    const progressPercent =
-      totalSteps > 0
-        ? Math.min(100, Math.max(0, Math.round((completedSteps / totalSteps) * 100)))
+    const progressPercent = isProgressMode
+      ? project.progressTargetCount > 0
+        ? Math.min(
+            100,
+            Math.max(0, Math.round((project.currentRow / project.progressTargetCount) * 100)),
+          )
+        : 0
+      : isCounterMode
+        ? 0
+        : totalSteps > 0
+        ? Math.min(
+            100,
+            Math.max(0, Math.round((detailedCompletedSteps / totalSteps) * 100)),
+          )
         : 0;
     const craftLabel =
       project.craftType === "crochet"
         ? messages.create.crochet
         : messages.create.knitting;
+    const trackingModeLabel =
+      project.trackingMode === "pattern"
+        ? messages.home.trackingModePattern
+        : project.trackingMode === "progress"
+          ? messages.home.trackingModeProgress
+          : messages.home.trackingModeCounter;
     const lineLabel =
-      project.structureType === "round"
+      isCounterMode
+        ? messages.home.counterLabel
+        : project.structureType === "round"
         ? messages.home.currentRoundLabel
         : messages.home.currentRowLabel;
-    const lineValue =
-      project.structureType === "round"
+    const lineValue = isCounterMode
+      ? `${project.countValue}${messages.home.counterSuffix}`
+      : isProgressMode
+      ? String(project.currentRow)
+      : project.structureType === "round"
         ? messages.create.roundLabel.replace(
             "{number}",
             String(safeCurrentRow + 1).padStart(2, "0"),
@@ -68,6 +89,16 @@ export default function HomePage() {
             "{number}",
             String(safeCurrentRow + 1).padStart(2, "0"),
           );
+    const progressValue = isCounterMode
+      ? messages.home.counterNoProgress
+      : isProgressMode
+        ? `${project.currentRow} / ${project.progressTargetCount}`
+        : `${detailedCompletedSteps} / ${totalSteps}`;
+    const activeLineMeta = isCounterMode
+      ? `${messages.home.counterTotalLabel}: ${project.countValue}${messages.home.counterSuffix}`
+      : isProgressMode
+        ? `${messages.home.progressLabel}: ${progressValue}`
+        : `${messages.home.activeLineSteps}: ${activeRowStepCount}`;
 
     return (
       <div
@@ -85,6 +116,9 @@ export default function HomePage() {
                 <span className="inline-flex rounded-full border border-cream-200 bg-white/70 px-3 py-1 text-xs text-thread-700">
                   {craftLabel}
                 </span>
+                <span className="inline-flex rounded-full border border-cream-200 bg-white/70 px-3 py-1 text-xs text-thread-700">
+                  {trackingModeLabel}
+                </span>
                 {isCompleted ? (
                   <span className="inline-flex rounded-full border border-cream-200 bg-oat-100 px-3 py-1 text-xs text-thread-700">
                     {messages.home.completedBadge}
@@ -99,7 +133,9 @@ export default function HomePage() {
                 {project.name}
               </h2>
             </div>
-            <span className="text-sm text-thread-700">{progressPercent}%</span>
+            <span className="text-sm text-thread-700">
+              {isCounterMode ? `${project.countValue}${messages.home.counterSuffix}` : `${progressPercent}%`}
+            </span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -112,25 +148,29 @@ export default function HomePage() {
             <div className="rounded-[1.25rem] border border-cream-200 bg-white/60 px-4 py-4">
               <p className="eyebrow">{messages.home.progressLabel}</p>
               <p className={`mt-3 text-sm font-medium ${isCompleted ? "text-thread-700" : "text-thread-900"}`}>
-                {completedSteps} / {totalSteps}
+                {progressValue}
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="h-2 rounded-full bg-cream-200/80">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${progressPercent}%`,
-                  backgroundColor: isCompleted ? "#B69B86" : "#D8B7AE",
-                }}
-              />
-            </div>
+            {isCounterMode ? (
+              <div className="rounded-[1.25rem] border border-cream-200 bg-white/60 px-4 py-3 text-sm text-thread-700">
+                {messages.home.counterCardHint}
+              </div>
+            ) : (
+              <div className="h-2 rounded-full bg-cream-200/80">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${progressPercent}%`,
+                    backgroundColor: isCompleted ? "#B69B86" : "#D8B7AE",
+                  }}
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3 text-sm text-thread-700">
-              <span>
-                {messages.home.activeLineSteps}: {activeRowStepCount}
-              </span>
+              <span>{activeLineMeta}</span>
               {isCompleted ? (
                 <div className="flex items-center gap-2">
                   <button

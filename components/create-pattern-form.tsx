@@ -23,6 +23,12 @@ export function CreatePatternForm() {
   const setStructureType = usePatternRowsStore(
     (state) => state.setDraftStructureType,
   );
+  const setTrackingMode = usePatternRowsStore(
+    (state) => state.setDraftTrackingMode,
+  );
+  const setProgressTargetCount = usePatternRowsStore(
+    (state) => state.setDraftProgressTargetCount,
+  );
   const setStartDirection = usePatternRowsStore(
     (state) => state.setDraftStartDirection,
   );
@@ -35,12 +41,17 @@ export function CreatePatternForm() {
   const projectName = draftProject.name;
   const craftType = draftProject.craftType;
   const structureType = draftProject.structureType;
+  const trackingMode = draftProject.trackingMode;
   const startDirection = draftProject.startDirection;
   const startSide = draftProject.startSide;
   const rows = draftProject.rows;
+  const progressTargetCount = draftProject.progressTargetCount;
   const isCrochet = craftType === "crochet";
   const isKnitting = craftType === "knitting";
   const usesRounds = structureType === "round";
+  const isPatternMode = trackingMode === "pattern";
+  const isProgressMode = trackingMode === "progress";
+  const isCounterMode = trackingMode === "counter";
   const modeLabel = isCrochet ? messages.create.crochet : messages.create.knitting;
   const rowEyebrow = usesRounds
     ? messages.create.roundEyebrow
@@ -64,6 +75,12 @@ export function CreatePatternForm() {
   const rowsDescription = usesRounds
     ? messages.create.crochetRowsDescription
     : messages.create.rowsDescription;
+  const progressTotalLabel = usesRounds
+    ? messages.create.progressTotalRoundsLabel
+    : messages.create.progressTotalRowsLabel;
+  const currentLineLabel = usesRounds
+    ? messages.tracker.currentRound
+    : messages.tracker.currentRow;
   const [openPatternHelperRowId, setOpenPatternHelperRowId] = useState<number | null>(
     null,
   );
@@ -199,6 +216,9 @@ export function CreatePatternForm() {
     router.push(`/projects/${projectId}`);
   }
 
+  const isStartDisabled =
+    !craftType || (trackingMode === "progress" && progressTargetCount <= 0);
+
   return (
     <div className="space-y-5 sm:space-y-6">
       <PageCard>
@@ -232,10 +252,10 @@ export function CreatePatternForm() {
             </p>
           </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setCraftType("knitting")}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setCraftType("knitting")}
               className={`rounded-[1.5rem] border p-5 text-left transition ${
                 craftType === "knitting"
                   ? "border-transparent bg-oat-100"
@@ -264,6 +284,73 @@ export function CreatePatternForm() {
               </p>
               <p className="mt-2 text-sm leading-6 text-thread-700">
                 {messages.create.crochetDescription}
+              </p>
+            </button>
+          </div>
+        </div>
+      </PageCard>
+
+      <PageCard>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="eyebrow">{messages.create.trackingModeEyebrow}</p>
+            <h2 className="font-serif text-3xl text-thread-900">
+              {messages.create.trackingModeTitle}
+            </h2>
+            <p className="max-w-2xl text-sm leading-6 text-thread-700">
+              {messages.create.trackingModeDescription}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setTrackingMode("pattern")}
+              className={`rounded-[1.5rem] border p-5 text-left transition ${
+                isPatternMode
+                  ? "border-transparent bg-oat-100"
+                  : "border-cream-200 bg-white/70"
+              }`}
+            >
+              <p className="font-serif text-2xl text-thread-900">
+                {messages.create.trackingModePattern}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-thread-700">
+                {messages.create.trackingModePatternDescription}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTrackingMode("progress")}
+              className={`rounded-[1.5rem] border p-5 text-left transition ${
+                isProgressMode
+                  ? "border-transparent bg-oat-100"
+                  : "border-cream-200 bg-white/70"
+              }`}
+            >
+              <p className="font-serif text-2xl text-thread-900">
+                {messages.create.trackingModeProgress}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-thread-700">
+                {messages.create.trackingModeProgressDescription}
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTrackingMode("counter")}
+              className={`rounded-[1.5rem] border p-5 text-left transition ${
+                isCounterMode
+                  ? "border-transparent bg-oat-100"
+                  : "border-cream-200 bg-white/70"
+              }`}
+            >
+              <p className="font-serif text-2xl text-thread-900">
+                {messages.create.trackingModeCounter}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-thread-700">
+                {messages.create.trackingModeCounterDescription}
               </p>
             </button>
           </div>
@@ -407,12 +494,26 @@ export function CreatePatternForm() {
       <PageCard>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <p className="eyebrow">{rowsEyebrow}</p>
+            <p className="eyebrow">
+              {isPatternMode
+                ? rowsEyebrow
+                : isProgressMode
+                  ? messages.create.progressSetupEyebrow
+                  : messages.create.counterSetupEyebrow}
+            </p>
             <h2 className="font-serif text-3xl text-thread-900">
-              {rowsTitle}
+              {isPatternMode
+                ? rowsTitle
+                : isProgressMode
+                  ? messages.create.progressSetupTitle
+                  : messages.create.counterSetupTitle}
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-thread-700">
-              {rowsDescription}
+              {isPatternMode
+                ? rowsDescription
+                : isProgressMode
+                  ? messages.create.progressSetupDescription
+                  : messages.create.counterSetupDescription}
             </p>
           </div>
 
@@ -420,249 +521,326 @@ export function CreatePatternForm() {
             <span className="rounded-full border border-cream-200 bg-white/70 px-4 py-2 text-sm text-thread-700">
               {messages.create.selectedMode}: {craftType ? modeLabel : "-"}
             </span>
+            <span className="rounded-full border border-cream-200 bg-white/70 px-4 py-2 text-sm text-thread-700">
+              {messages.create.trackingModeBadge}:{" "}
+              {isPatternMode
+                ? messages.create.trackingModePattern
+                : isProgressMode
+                  ? messages.create.trackingModeProgress
+                  : messages.create.trackingModeCounter}
+            </span>
           </div>
         </div>
       </PageCard>
 
-      <PageCard>
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <p className="eyebrow">{rowEyebrow}</p>
-            <h3 className="font-serif text-[1.9rem] leading-none text-thread-900">
-              {rowsTitle}
-            </h3>
-          </div>
+      {isPatternMode ? (
+        <PageCard>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{rowEyebrow}</p>
+              <h3 className="font-serif text-[1.9rem] leading-none text-thread-900">
+                {rowsTitle}
+              </h3>
+            </div>
 
-          <div className="rounded-[1.75rem] border border-cream-200 bg-white/40">
-            {rows.map((row, index) => (
-              (() => {
+            <div className="rounded-[1.75rem] border border-cream-200 bg-white/40">
+              {rows.map((row, index) => {
                 const isCastOnRow = isKnitting && index === 0;
 
                 return (
-              <div
-                key={row.id}
-                className={`grid grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 py-4 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:px-5 ${
-                  index !== rows.length - 1 ? "border-b border-cream-200" : ""
-                }`}
-              >
-                <div className="pt-3 text-sm font-medium tracking-[0.08em] text-thread-700">
-                  {isCastOnRow
-                    ? messages.create.castOnShort
-                    : String(isKnitting ? index : index + 1).padStart(2, "0")}
-                </div>
-
-                <label className="block min-w-0">
-                  <span className="sr-only">
-                    {isCastOnRow
-                      ? messages.create.castOnLabel
-                      : `${format(rowLabelTemplate, {
-                          number: String(isKnitting ? index : index + 1).padStart(2, "0"),
-                        })} ${rowInstruction}`}
-                  </span>
-                  {isCastOnRow ? (
-                    <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/70 px-4 py-4">
-                      <p className="text-sm font-medium text-thread-900">
-                        {messages.create.castOnLabel}
-                      </p>
-                      <input
-                        type="number"
-                        min="0"
-                        inputMode="numeric"
-                        value={row.text.replace(/^CO\s*/i, "")}
-                        onChange={(event) =>
-                          updateRow(row.id, `CO ${event.target.value || "0"}`)
-                        }
-                        placeholder={messages.create.castOnPlaceholder}
-                        className="mt-3 h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
-                      />
+                  <div
+                    key={row.id}
+                    className={`grid grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-3 px-4 py-4 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:px-5 ${
+                      index !== rows.length - 1 ? "border-b border-cream-200" : ""
+                    }`}
+                  >
+                    <div className="pt-3 text-sm font-medium tracking-[0.08em] text-thread-700">
+                      {isCastOnRow
+                        ? messages.create.castOnShort
+                        : String(isKnitting ? index : index + 1).padStart(2, "0")}
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={row.text}
-                        onChange={(event) => updateRow(row.id, event.target.value)}
-                        placeholder={placeholders[index % placeholders.length]}
-                        className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
-                      />
-                      {isKnitting ? (
+
+                    <label className="block min-w-0">
+                      <span className="sr-only">
+                        {isCastOnRow
+                          ? messages.create.castOnLabel
+                          : `${format(rowLabelTemplate, {
+                              number: String(
+                                isKnitting ? index : index + 1,
+                              ).padStart(2, "0"),
+                            })} ${rowInstruction}`}
+                      </span>
+                      {isCastOnRow ? (
+                        <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/70 px-4 py-4">
+                          <p className="text-sm font-medium text-thread-900">
+                            {messages.create.castOnLabel}
+                          </p>
+                          <input
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={row.text.replace(/^CO\s*/i, "")}
+                            onChange={(event) =>
+                              updateRow(row.id, `CO ${event.target.value || "0"}`)
+                            }
+                            placeholder={messages.create.castOnPlaceholder}
+                            className="mt-3 h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
+                          />
+                        </div>
+                      ) : (
                         <div className="space-y-3">
-                          <button
-                            type="button"
-                            onClick={() => openPatternHelper(row.id)}
-                            className="inline-flex h-9 items-center rounded-full border border-cream-200 bg-white/70 px-3 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
-                          >
-                            {messages.create.patternQuickInput}
-                          </button>
-                          {openPatternHelperRowId === row.id ? (
-                            <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/55 p-3">
-                              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
-                                <label className="space-y-2">
-                                  <span className="text-xs text-thread-700">
-                                    {messages.create.patternTypeLabel}
-                                  </span>
-                                  <select
-                                    value={patternType}
-                                    onChange={(event) =>
-                                      setPatternType(
-                                        event.target.value as PatternHelperType,
-                                      )
-                                    }
-                                    className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
-                                  >
-                                    <option value="rib-1x1">
-                                      {messages.create.pattern1x1Rib}
-                                    </option>
-                                    <option value="rib-2x2">
-                                      {messages.create.pattern2x2Rib}
-                                    </option>
-                                    <option value="stockinette">
-                                      {messages.create.patternStockinette}
-                                    </option>
-                                    <option value="garter">
-                                      {messages.create.patternGarter}
-                                    </option>
-                                    <option value="seed">
-                                      {messages.create.patternSeedStitch}
-                                    </option>
-                                  </select>
-                                </label>
-                                <label className="space-y-2">
-                                  <span className="text-xs text-thread-700">
-                                    {messages.create.totalStitchCountLabel}
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    inputMode="numeric"
-                                    value={patternStitchCount}
-                                    onChange={(event) => {
-                                      setPatternStitchCount(event.target.value);
-                                      setPatternHelperError("");
-                                    }}
-                                    className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
-                                  />
-                                </label>
-                                <button
-                                  type="button"
-                                  onClick={() => applyPatternHelper(row.id, index)}
-                                  className="inline-flex h-10 items-center justify-center rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 transition hover:border-thread-700/30 hover:bg-white"
-                                >
-                                  {messages.create.applyPattern}
-                                </button>
-                              </div>
-                              {patternType === "seed" ? (
-                                <div className="mt-3 max-w-[180px]">
-                                  <label className="space-y-2">
-                                    <span className="text-xs text-thread-700">
-                                      {messages.create.startingStitchLabel}
-                                    </span>
-                                    <select
-                                      value={seedStartingStitch}
-                                      onChange={(event) =>
-                                        setSeedStartingStitch(
-                                          event.target.value as StitchType,
-                                        )
-                                      }
-                                      className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                          <input
+                            type="text"
+                            value={row.text}
+                            onChange={(event) => updateRow(row.id, event.target.value)}
+                            placeholder={placeholders[index % placeholders.length]}
+                            className="h-12 w-full border-0 border-b border-cream-200 bg-transparent px-0 text-sm text-thread-900 outline-none transition placeholder:text-thread-700/70 focus:border-sand-100"
+                          />
+                          {isKnitting ? (
+                            <div className="space-y-3">
+                              <button
+                                type="button"
+                                onClick={() => openPatternHelper(row.id)}
+                                className="inline-flex h-9 items-center rounded-full border border-cream-200 bg-white/70 px-3 text-xs text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                              >
+                                {messages.create.patternQuickInput}
+                              </button>
+                              {openPatternHelperRowId === row.id ? (
+                                <div className="rounded-[1.25rem] border border-cream-200 bg-oat-100/55 p-3">
+                                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
+                                    <label className="space-y-2">
+                                      <span className="text-xs text-thread-700">
+                                        {messages.create.patternTypeLabel}
+                                      </span>
+                                      <select
+                                        value={patternType}
+                                        onChange={(event) =>
+                                          setPatternType(
+                                            event.target.value as PatternHelperType,
+                                          )
+                                        }
+                                        className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                      >
+                                        <option value="rib-1x1">
+                                          {messages.create.pattern1x1Rib}
+                                        </option>
+                                        <option value="rib-2x2">
+                                          {messages.create.pattern2x2Rib}
+                                        </option>
+                                        <option value="stockinette">
+                                          {messages.create.patternStockinette}
+                                        </option>
+                                        <option value="garter">
+                                          {messages.create.patternGarter}
+                                        </option>
+                                        <option value="seed">
+                                          {messages.create.patternSeedStitch}
+                                        </option>
+                                      </select>
+                                    </label>
+                                    <label className="space-y-2">
+                                      <span className="text-xs text-thread-700">
+                                        {messages.create.totalStitchCountLabel}
+                                      </span>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        inputMode="numeric"
+                                        value={patternStitchCount}
+                                        onChange={(event) => {
+                                          setPatternStitchCount(event.target.value);
+                                          setPatternHelperError("");
+                                        }}
+                                        className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                      />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyPatternHelper(row.id, index)}
+                                      className="inline-flex h-10 items-center justify-center rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 transition hover:border-thread-700/30 hover:bg-white"
                                     >
-                                      <option value="K">
-                                        {messages.create.stitchKnit}
-                                      </option>
-                                      <option value="P">
-                                        {messages.create.stitchPurl}
-                                      </option>
-                                    </select>
-                                  </label>
+                                      {messages.create.applyPattern}
+                                    </button>
+                                  </div>
+                                  {patternType === "seed" ? (
+                                    <div className="mt-3 max-w-[180px]">
+                                      <label className="space-y-2">
+                                        <span className="text-xs text-thread-700">
+                                          {messages.create.startingStitchLabel}
+                                        </span>
+                                        <select
+                                          value={seedStartingStitch}
+                                          onChange={(event) =>
+                                            setSeedStartingStitch(
+                                              event.target.value as StitchType,
+                                            )
+                                          }
+                                          className="h-10 w-full rounded-full border border-cream-200 bg-white/90 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100"
+                                        >
+                                          <option value="K">
+                                            {messages.create.stitchKnit}
+                                          </option>
+                                          <option value="P">
+                                            {messages.create.stitchPurl}
+                                          </option>
+                                        </select>
+                                      </label>
+                                    </div>
+                                  ) : null}
+                                  {patternHelperError ? (
+                                    <p className="mt-2 text-xs text-thread-700">
+                                      {patternHelperError}
+                                    </p>
+                                  ) : null}
                                 </div>
-                              ) : null}
-                              {patternHelperError ? (
-                                <p className="mt-2 text-xs text-thread-700">
-                                  {patternHelperError}
-                                </p>
                               ) : null}
                             </div>
                           ) : null}
                         </div>
+                      )}
+                      {row.parseError ? (
+                        <p className="mt-2 text-xs text-thread-700">
+                          {messages.create.parseErrorPrefix}: {row.parseError}
+                        </p>
                       ) : null}
+                    </label>
+
+                    <div className="flex items-center gap-1 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => duplicateRow(row.id)}
+                        disabled={isCastOnRow}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={messages.create.duplicateRow}
+                        title={messages.create.duplicateRow}
+                      >
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                        >
+                          <rect x="9" y="9" width="10" height="10" rx="2" />
+                          <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteRow(row.id)}
+                        disabled={rows.length <= 1 || isCastOnRow}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={messages.create.deleteRow}
+                        title={messages.create.deleteRow}
+                      >
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                        >
+                          <path d="M6 7h12" />
+                          <path d="M9 7V5h6v2" />
+                          <path d="M8 7l1 12h6l1-12" />
+                        </svg>
+                      </button>
                     </div>
-                  )}
-                  {row.parseError ? (
-                    <p className="mt-2 text-xs text-thread-700">
-                      {messages.create.parseErrorPrefix}: {row.parseError}
-                    </p>
-                  ) : null}
-                </label>
-
-                <div className="flex items-center gap-1 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => duplicateRow(row.id)}
-                    disabled={isCastOnRow}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label={messages.create.duplicateRow}
-                    title={messages.create.duplicateRow}
-                  >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    >
-                      <rect x="9" y="9" width="10" height="10" rx="2" />
-                      <path d="M5 15V7a2 2 0 0 1 2-2h8" />
-                    </svg>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => deleteRow(row.id)}
-                    disabled={rows.length <= 1 || isCastOnRow}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-thread-700 transition hover:border-cream-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label={messages.create.deleteRow}
-                    title={messages.create.deleteRow}
-                  >
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    >
-                      <path d="M6 7h12" />
-                      <path d="M9 7V5h6v2" />
-                      <path d="M8 7l1 12h6l1-12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                  </div>
                 );
-              })()
-            ))}
+              })}
 
-            <div className="border-t border-cream-200 px-4 py-4 sm:px-5">
-              <button
-                type="button"
-                onClick={addRow}
-                className="pill-button h-11 px-4 hover:border-thread-700/30 hover:bg-white"
-              >
-                {addLabel}
-              </button>
+              <div className="border-t border-cream-200 px-4 py-4 sm:px-5">
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="pill-button h-11 px-4 hover:border-thread-700/30 hover:bg-white"
+                >
+                  {addLabel}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </PageCard>
+        </PageCard>
+      ) : isProgressMode ? (
+        <PageCard>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{messages.create.progressPreviewEyebrow}</p>
+              <h3 className="font-serif text-[1.9rem] leading-none text-thread-900">
+                {messages.create.progressPreviewTitle}
+              </h3>
+              <p className="max-w-2xl text-sm leading-6 text-thread-700">
+                {messages.create.progressPreviewDescription}
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-end">
+              <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
+                <p className="eyebrow">{currentLineLabel}</p>
+                <p className="mt-3 font-serif text-4xl text-thread-900">0</p>
+                <p className="mt-2 text-sm text-thread-700">
+                  {messages.create.progressPreviewHint}
+                </p>
+              </div>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-thread-900">
+                  {progressTotalLabel}
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={progressTargetCount === 0 ? "" : progressTargetCount}
+                  onChange={(event) =>
+                    setProgressTargetCount(
+                      Number.parseInt(event.target.value || "0", 10),
+                    )
+                  }
+                  placeholder="20"
+                  className="h-12 w-full rounded-[1.25rem] border border-cream-200 bg-white/80 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100 focus:bg-white"
+                />
+              </label>
+            </div>
+          </div>
+        </PageCard>
+      ) : (
+        <PageCard>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="eyebrow">{messages.create.counterPreviewEyebrow}</p>
+              <h3 className="font-serif text-[1.9rem] leading-none text-thread-900">
+                {messages.create.counterPreviewTitle}
+              </h3>
+              <p className="max-w-2xl text-sm leading-6 text-thread-700">
+                {messages.create.counterPreviewDescription}
+              </p>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
+              <p className="eyebrow">{messages.create.counterTotalPreviewLabel}</p>
+              <p className="mt-3 font-serif text-4xl text-thread-900">
+                {messages.create.counterTotalPreviewValue}
+              </p>
+              <p className="mt-2 text-sm text-thread-700">
+                {messages.create.counterPreviewHint}
+              </p>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       <div className="flex justify-end">
         <button
           type="button"
           onClick={handleStartTracking}
-          disabled={!craftType}
+          disabled={isStartDisabled}
           className={`pill-button-accent h-12 px-5 hover:bg-sand-100 ${
-            !craftType ? "opacity-50" : ""
+            isStartDisabled ? "cursor-not-allowed opacity-50" : ""
           }`}
         >
           {messages.create.startTracking}

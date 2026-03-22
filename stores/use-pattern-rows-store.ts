@@ -1,14 +1,21 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { completeCurrentLine } from "@/lib/tracker/completion";
-import {
-  getNextCursor,
-  normalizeProjectCursor,
-} from "@/lib/tracker/cursor";
+import { getNextCursor, normalizeProjectCursor } from "@/lib/tracker/cursor";
 import { parseProjectRow, parseProjectRows } from "@/lib/tracker/parse-project-rows";
-import type { CraftType, PatternRow, StructureType } from "@/lib/tracker/types";
+import type {
+  CraftType,
+  PatternRow,
+  StructureType,
+  TrackingMode,
+} from "@/lib/tracker/types";
 
-export type { CraftType, PatternRow, StructureType } from "@/lib/tracker/types";
+export type {
+  CraftType,
+  PatternRow,
+  StructureType,
+  TrackingMode,
+} from "@/lib/tracker/types";
 
 type MemoryStorageValue = Record<string, string>;
 
@@ -17,6 +24,8 @@ type StoredActivityLogEntry = {
   label?: string;
   createdAt?: string;
 };
+
+const memoryStorageState: MemoryStorageValue = {};
 
 const memoryStorage: Storage = {
   getItem: (name) => memoryStorageState[name] ?? null,
@@ -37,8 +46,6 @@ const memoryStorage: Storage = {
   },
 };
 
-const memoryStorageState: MemoryStorageValue = {};
-
 function getSafeStorage(): Storage {
   if (typeof window !== "undefined" && window.localStorage) {
     return window.localStorage;
@@ -53,9 +60,12 @@ export type TrackerProject = {
   name: string;
   craftType: CraftType;
   structureType: StructureType;
+  trackingMode: TrackingMode;
   startDirection: "right" | "left";
   startSide: "RS" | "WS";
   rows: PatternRow[];
+  progressTargetCount: number;
+  countValue: number;
   currentRow: number;
   currentStep: number;
   isProjectComplete: boolean;
@@ -73,9 +83,11 @@ type DraftProject = {
   name: string;
   craftType: CraftType | null;
   structureType: StructureType;
+  trackingMode: TrackingMode;
   startDirection: "right" | "left";
   startSide: "RS" | "WS";
   rows: PatternRow[];
+  progressTargetCount: number;
 };
 
 type PatternRowsStore = {
@@ -86,6 +98,8 @@ type PatternRowsStore = {
   setDraftProjectName: (projectName: string) => void;
   setDraftCraftType: (craftType: CraftType) => void;
   setDraftStructureType: (structureType: StructureType) => void;
+  setDraftTrackingMode: (trackingMode: TrackingMode) => void;
+  setDraftProgressTargetCount: (count: number) => void;
   setDraftStartDirection: (direction: "right" | "left") => void;
   setDraftStartSide: (side: "RS" | "WS") => void;
   addDraftRow: () => void;
@@ -123,9 +137,11 @@ function buildDraftProject(): DraftProject {
     name: "",
     craftType: null,
     structureType: "row",
+    trackingMode: "pattern",
     startDirection: "right",
     startSide: "RS",
     rows: buildInitialRows(),
+    progressTargetCount: 20,
   };
 }
 
@@ -143,9 +159,7 @@ function isCastOnText(text: string): boolean {
 }
 
 function ensureKnittingRows(rows: PatternRow[]): PatternRow[] {
-  const nonCastOnRows = rows.filter((row, index) =>
-    index === 0 ? !isCastOnText(row.text) : !isCastOnText(row.text),
-  );
+  const nonCastOnRows = rows.filter((row) => !isCastOnText(row.text));
 
   return [buildCastOnRow(1), ...nonCastOnRows].map((row, index) => ({
     ...row,
@@ -264,6 +278,60 @@ function sanitizeActivityLogEntries(entries: unknown) {
     .filter((entry): entry is TrackerProject["activityLog"][number] => entry !== null);
 }
 
+function normalizeProgressTargetCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(value));
+}
+
+function normalizeProgressProject(
+  current: number,
+  target: number,
+): Pick<
+  TrackerProject,
+  "currentRow" | "currentStep" | "countValue" | "isProjectComplete"
+> {
+  const safeTarget = normalizeProgressTargetCount(target);
+  const safeCurrent = Math.min(Math.max(0, Math.floor(current)), safeTarget);
+
+  return {
+    currentRow: safeCurrent,
+    currentStep: 0,
+    countValue: 0,
+    isProjectComplete: safeTarget > 0 && safeCurrent >= safeTarget,
+  };
+}
+
+function normalizeCounterProject(
+  count: number,
+): Pick<
+  TrackerProject,
+  "currentRow" | "currentStep" | "countValue" | "isProjectComplete"
+> {
+  const safeCount = Math.max(0, Math.floor(Number.isFinite(count) ? count : 0));
+
+  return {
+    currentRow: 0,
+    currentStep: 0,
+    countValue: safeCount,
+    isProjectComplete: false,
+  };
+}
+
+function normalizeStoredTrackingMode(value: unknown): TrackingMode {
+  if (value === "detailed") {
+    return "pattern";
+  }
+
+  if (value === "simple") {
+    return "progress";
+  }
+
+  return value === "progress" || value === "counter" ? value : "pattern";
+}
+
 export const usePatternRowsStore = create<PatternRowsStore>()(
   persist(
     (set) => ({
@@ -284,7 +352,10 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             craftType === "knitting"
               ? ensureKnittingRows(state.draftProject.rows)
               : stripCastOnRow(state.draftProject.rows);
-          const rows = parseProjectRows(craftType, draftRows);
+          const rows =
+            state.draftProject.trackingMode === "pattern"
+              ? parseProjectRows(craftType, draftRows)
+              : draftRows;
 
           return {
             draftProject: {
@@ -303,6 +374,32 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               state.draftProject.craftType === "knitting"
                 ? "row"
                 : structureType,
+          },
+        })),
+      setDraftTrackingMode: (trackingMode) =>
+        set((state) => {
+          const craftType = state.draftProject.craftType;
+          const baseRows =
+            craftType === "knitting"
+              ? ensureKnittingRows(state.draftProject.rows)
+              : stripCastOnRow(state.draftProject.rows);
+
+          return {
+            draftProject: {
+              ...state.draftProject,
+              trackingMode,
+              rows:
+                trackingMode === "pattern" && craftType
+                  ? parseProjectRows(craftType, baseRows)
+                  : baseRows,
+            },
+          };
+        }),
+      setDraftProgressTargetCount: (count) =>
+        set((state) => ({
+          draftProject: {
+            ...state.draftProject,
+            progressTargetCount: normalizeProgressTargetCount(count),
           },
         })),
       setDraftStartDirection: (startDirection) =>
@@ -335,9 +432,7 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
         }),
       duplicateDraftRow: (id) =>
         set((state) => {
-          const sourceIndex = state.draftProject.rows.findIndex(
-            (row) => row.id === id,
-          );
+          const sourceIndex = state.draftProject.rows.findIndex((row) => row.id === id);
 
           if (
             sourceIndex === -1 ||
@@ -397,7 +492,10 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
           const rows = state.draftProject.rows.map((row) =>
             row.id === id
               ? (() => {
-                  const parsed = parseProjectRow(state.draftProject.craftType, text);
+                  const parsed =
+                    state.draftProject.trackingMode === "pattern"
+                      ? parseProjectRow(state.draftProject.craftType, text)
+                      : { parsedSteps: [], parseError: null };
 
                   return {
                     ...row,
@@ -424,24 +522,47 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             return state;
           }
 
+          const timestamp = new Date().toISOString();
           const craftType = state.draftProject.craftType;
+          const trackingMode = state.draftProject.trackingMode;
+          const structureType =
+            craftType === "knitting" ? "row" : state.draftProject.structureType;
+          const progressTargetCount = normalizeProgressTargetCount(
+            state.draftProject.progressTargetCount,
+          );
+
+          if (trackingMode === "progress" && progressTargetCount <= 0) {
+            return state;
+          }
+
           const draftRows =
             craftType === "knitting"
               ? ensureKnittingRows(state.draftProject.rows)
               : state.draftProject.rows;
-          const rows = parseProjectRows(craftType, draftRows);
-          const cursor = normalizeProjectCursor(rows, 0, 0, false);
-          const timestamp = new Date().toISOString();
+          const rows =
+            trackingMode === "pattern" ? parseProjectRows(craftType, draftRows) : [];
+          const cursor =
+            trackingMode === "pattern"
+              ? {
+                  ...normalizeProjectCursor(rows, 0, 0, false),
+                  countValue: 0,
+                }
+              : trackingMode === "progress"
+                ? normalizeProgressProject(0, progressTargetCount)
+                : normalizeCounterProject(0);
+
           const nextProject: TrackerProject = {
             id: buildProjectId(),
             userId: state.currentUserId,
             name: state.draftProject.name.trim() || "Untitled Project",
             craftType,
-            structureType:
-              craftType === "knitting" ? "row" : state.draftProject.structureType,
+            structureType,
+            trackingMode,
             startDirection: state.draftProject.startDirection,
             startSide: state.draftProject.startSide,
             rows,
+            progressTargetCount,
+            countValue: cursor.countValue,
             currentRow: cursor.currentRow,
             currentStep: cursor.currentStep,
             isProjectComplete: cursor.isProjectComplete,
@@ -477,13 +598,28 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             ...row,
             parsedSteps: [...row.parsedSteps],
           }));
-          const cursor = normalizeProjectCursor(rows, 0, 0, false);
+          const patternCursor = {
+            ...normalizeProjectCursor(rows, 0, 0, false),
+            countValue: 0,
+          };
+          const progressCursor = normalizeProgressProject(
+            0,
+            sourceProject.progressTargetCount,
+          );
+          const counterCursor = normalizeCounterProject(0);
+          const cursor =
+            sourceProject.trackingMode === "pattern"
+              ? patternCursor
+              : sourceProject.trackingMode === "progress"
+                ? progressCursor
+                : counterCursor;
           const timestamp = new Date().toISOString();
           const nextProject: TrackerProject = {
             ...sourceProject,
             id: buildProjectId(),
             name: `${sourceProject.name} Copy`,
             rows,
+            countValue: cursor.countValue,
             currentRow: cursor.currentRow,
             currentStep: cursor.currentStep,
             isProjectComplete: cursor.isProjectComplete,
@@ -507,8 +643,7 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
         set((state) => ({
           projects: updateProjectById(state.projects, id, (project) => ({
             ...project,
-            startDirection:
-              project.startDirection === "right" ? "left" : "right",
+            startDirection: project.startDirection === "right" ? "left" : "right",
           })),
           selectedProjectId: id,
         })),
@@ -523,7 +658,11 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
       updateProjectFutureRows: (id, updates) =>
         set((state) => ({
           projects: updateProjectById(state.projects, id, (project) => {
-            if (updates.length === 0 || project.isProjectComplete) {
+            if (
+              project.trackingMode !== "pattern" ||
+              updates.length === 0 ||
+              project.isProjectComplete
+            ) {
               return project;
             }
 
@@ -567,53 +706,118 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
         })),
       advanceProjectSteps: (id, count) =>
         set((state) => ({
-          projects: updateProjectById(state.projects, id, (project) => ({
-            ...project,
-            ...getNextCursor(
-              project.rows,
-              project.currentRow,
-              project.currentStep,
-              count,
-              project.isProjectComplete,
-            ),
-            activityLog:
-              count > 0
-                ? appendActivity(project, `+${count}`)
-                : project.activityLog,
-          })),
+          projects: updateProjectById(state.projects, id, (project) => {
+            if (project.trackingMode === "progress") {
+              return {
+                ...project,
+                ...normalizeProgressProject(
+                  project.currentRow + count,
+                  project.progressTargetCount,
+                ),
+                activityLog:
+                  count > 0
+                    ? appendActivity(project, `+${count}`)
+                    : project.activityLog,
+              };
+            }
+
+            if (project.trackingMode === "counter") {
+              return {
+                ...project,
+                ...normalizeCounterProject(project.countValue + count),
+                activityLog:
+                  count > 0
+                    ? appendActivity(project, `+${count}`)
+                    : project.activityLog,
+              };
+            }
+
+            return {
+              ...project,
+              ...getNextCursor(
+                project.rows,
+                project.currentRow,
+                project.currentStep,
+                count,
+                project.isProjectComplete,
+              ),
+              activityLog:
+                count > 0
+                  ? appendActivity(project, `+${count}`)
+                  : project.activityLog,
+            };
+          }),
           selectedProjectId: id,
         })),
       undoProjectStep: (id) =>
         set((state) => ({
-          projects: updateProjectById(state.projects, id, (project) => ({
-            ...project,
-            ...getNextCursor(
-              project.rows,
-              project.currentRow,
-              project.currentStep,
-              -1,
-              project.isProjectComplete,
-            ),
-            activityLog: appendActivity(project, "Undo"),
-          })),
+          projects: updateProjectById(state.projects, id, (project) => {
+            if (project.trackingMode === "progress") {
+              return {
+                ...project,
+                ...normalizeProgressProject(
+                  project.currentRow - 1,
+                  project.progressTargetCount,
+                ),
+                activityLog: appendActivity(project, "Undo"),
+              };
+            }
+
+            if (project.trackingMode === "counter") {
+              return {
+                ...project,
+                ...normalizeCounterProject(project.countValue - 1),
+                activityLog: appendActivity(project, "Undo"),
+              };
+            }
+
+            return {
+              ...project,
+              ...getNextCursor(
+                project.rows,
+                project.currentRow,
+                project.currentStep,
+                -1,
+                project.isProjectComplete,
+              ),
+              activityLog: appendActivity(project, "Undo"),
+            };
+          }),
           selectedProjectId: id,
         })),
       completeProjectLine: (id) =>
         set((state) => ({
-          projects: updateProjectById(state.projects, id, (project) => ({
-            ...project,
-            ...completeCurrentLine(project.rows, project.currentRow),
-            activityLog: appendActivity(
-              project,
-              project.structureType === "round" ? "Complete Round" : "Complete Row",
-            ),
-          })),
+          projects: updateProjectById(state.projects, id, (project) => {
+            if (project.trackingMode === "progress") {
+              return {
+                ...project,
+                ...normalizeProgressProject(
+                  project.progressTargetCount,
+                  project.progressTargetCount,
+                ),
+                activityLog: appendActivity(project, "Complete Project"),
+              };
+            }
+
+            if (project.trackingMode === "counter") {
+              return project;
+            }
+
+            return {
+              ...project,
+              ...completeCurrentLine(project.rows, project.currentRow),
+              activityLog: appendActivity(
+                project,
+                project.structureType === "round" ? "Complete Round" : "Complete Row",
+              ),
+            };
+          }),
           selectedProjectId: id,
         })),
     }),
     {
       name: "threadit-projects-store",
-      version: 4,
+      version: 6,
       storage: createJSONStorage(getSafeStorage),
       partialize: (state) => ({
         currentUserId: state.currentUserId,
@@ -636,23 +840,96 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
                   (state.draftProject as DraftProject & { workMode?: StructureType })
                     .workMode ??
                   "row",
+                trackingMode: normalizeStoredTrackingMode(
+                  (state.draftProject as DraftProject & {
+                    trackingMode?: "detailed" | "simple" | TrackingMode;
+                  }).trackingMode,
+                ),
+                progressTargetCount: normalizeProgressTargetCount(
+                  (state.draftProject as DraftProject & {
+                    progressTargetCount?: number;
+                    simpleTargetCount?: number;
+                  }).progressTargetCount ??
+                    (state.draftProject as DraftProject & {
+                      progressTargetCount?: number;
+                      simpleTargetCount?: number;
+                    }).simpleTargetCount ??
+                    20,
+                ),
               }
             : buildDraftProject(),
           projects:
-            state?.projects?.map((project) => ({
-              ...project,
-              userId: project.userId ?? null,
-              rows: sanitizePatternRows(project.rows),
-              structureType:
-                (project as TrackerProject & { workMode?: StructureType })
-                  .structureType ??
-                (project as TrackerProject & { workMode?: StructureType }).workMode ??
-                "row",
-              startDirection: project.startDirection ?? "right",
-              startSide: project.startSide ?? "RS",
-              notes: project.notes ?? "",
-              activityLog: sanitizeActivityLogEntries(project.activityLog),
-            })) ?? [],
+            state?.projects?.map((project) => {
+              const trackingMode = normalizeStoredTrackingMode(
+                (
+                  project as TrackerProject & {
+                    trackingMode?: "detailed" | "simple" | TrackingMode;
+                  }
+                ).trackingMode,
+              );
+              const rows = sanitizePatternRows(project.rows);
+              const progressTargetCount = normalizeProgressTargetCount(
+                (project as TrackerProject & {
+                  progressTargetCount?: number;
+                  simpleTargetCount?: number;
+                }).progressTargetCount ??
+                  (project as TrackerProject & {
+                    progressTargetCount?: number;
+                    simpleTargetCount?: number;
+                  }).simpleTargetCount ??
+                  0,
+              );
+              const patternCursor = normalizeProjectCursor(
+                rows,
+                project.currentRow ?? 0,
+                project.currentStep ?? 0,
+                project.isProjectComplete ?? false,
+              );
+              const progressCursor = normalizeProgressProject(
+                project.currentRow ?? 0,
+                progressTargetCount,
+              );
+              const counterCursor = normalizeCounterProject(
+                (project as TrackerProject & { countValue?: number }).countValue ?? 0,
+              );
+
+              return {
+                ...project,
+                userId: project.userId ?? null,
+                rows: trackingMode === "pattern" ? rows : [],
+                structureType:
+                  (project as TrackerProject & { workMode?: StructureType })
+                    .structureType ??
+                  (project as TrackerProject & { workMode?: StructureType }).workMode ??
+                  "row",
+                trackingMode,
+                progressTargetCount,
+                countValue:
+                  trackingMode === "counter" ? counterCursor.countValue : 0,
+                startDirection: project.startDirection ?? "right",
+                startSide: project.startSide ?? "RS",
+                currentRow:
+                  trackingMode === "pattern"
+                    ? patternCursor.currentRow
+                    : trackingMode === "progress"
+                      ? progressCursor.currentRow
+                      : counterCursor.currentRow,
+                currentStep:
+                  trackingMode === "pattern"
+                    ? patternCursor.currentStep
+                    : trackingMode === "progress"
+                      ? progressCursor.currentStep
+                      : counterCursor.currentStep,
+                isProjectComplete:
+                  trackingMode === "pattern"
+                    ? patternCursor.isProjectComplete
+                    : trackingMode === "progress"
+                      ? progressCursor.isProjectComplete
+                      : counterCursor.isProjectComplete,
+                notes: project.notes ?? "",
+                activityLog: sanitizeActivityLogEntries(project.activityLog),
+              };
+            }) ?? [],
           selectedProjectId: state?.selectedProjectId ?? null,
         } satisfies Pick<
           PatternRowsStore,

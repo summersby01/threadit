@@ -28,9 +28,18 @@ const en: Messages = {
     viewProject: "View",
     duplicateProject: "Duplicate",
     completedBadge: "Completed",
+    trackingModeLabel: "Tracking mode",
+    trackingModePattern: "도안 따라 기록",
+    trackingModeProgress: "진행률로 기록",
+    trackingModeCounter: "카운터",
     progressLabel: "Overall progress",
     currentRowLabel: "Current row",
     currentRoundLabel: "Current round",
+    counterLabel: "Counter",
+    counterTotalLabel: "Total count",
+    counterSuffix: "",
+    counterNoProgress: "No progress %",
+    counterCardHint: "Counter mode only tracks the accumulated count.",
     activeLineSteps: "Active line steps",
     completedProjectsDescription:
       "Keep finished projects as records and duplicate them when you want to start again.",
@@ -50,6 +59,18 @@ const en: Messages = {
     craftTypeTitle: "Choose your craft type",
     craftTypeDescription:
       "Projects begin in either knitting or crochet mode. That selection controls the input and tracker flow from the start.",
+    trackingModeEyebrow: "Tracking Mode",
+    trackingModeTitle: "Tracking mode",
+    trackingModeDescription: "Choose how you want to track this project.",
+    trackingModePattern: "도안 따라 기록",
+    trackingModeProgress: "진행률로 기록",
+    trackingModeCounter: "카운터",
+    trackingModePatternDescription:
+      "Enter row or round instructions and keep the full detailed step tracker.",
+    trackingModeProgressDescription:
+      "Skip pattern input and track only the current row or round against a total count.",
+    trackingModeCounterDescription:
+      "Track only a running count with minimal controls.",
     structureTypeEyebrow: "Crochet Structure",
     structureTypeTitle: "Choose rows or rounds",
     structureTypeDescription:
@@ -71,6 +92,7 @@ const en: Messages = {
     directionRight: "→ Right",
     directionLeft: "← Left",
     selectedMode: "Selected mode",
+    trackingModeBadge: "Tracking",
     rowsEyebrow: "Pattern Rows",
     rowsTitle: "Add row instructions",
     rowsDescription:
@@ -79,6 +101,28 @@ const en: Messages = {
     crochetRowsTitle: "Add round instructions",
     crochetRowsDescription:
       "Start with three rounds, then add more as needed. The crochet flow branches with its own examples and tracking language.",
+    progressSetupEyebrow: "Progress Setup",
+    progressSetupTitle: "Set the total count",
+    progressSetupDescription:
+      "Track only the current row or round and the overall percentage without pattern input.",
+    progressTotalRowsLabel: "Total rows",
+    progressTotalRoundsLabel: "Total rounds",
+    progressPreviewEyebrow: "Progress Tracker",
+    progressPreviewTitle: "Track current position and total only",
+    progressPreviewDescription:
+      "The tracker shows the current row or round, total count, and progress percentage only.",
+    progressPreviewHint: "Use +1, +5, and 완료 in the tracker to update progress quickly.",
+    counterSetupEyebrow: "Counter",
+    counterSetupTitle: "Track count only",
+    counterSetupDescription:
+      "Counter mode skips pattern input and total progress logic.",
+    counterPreviewEyebrow: "Counter Preview",
+    counterPreviewTitle: "Keep a running count only",
+    counterPreviewDescription:
+      "No totals and no pattern input, only an accumulated count.",
+    counterTotalPreviewLabel: "Total count",
+    counterTotalPreviewValue: "Total 0",
+    counterPreviewHint: "Use +1, +5, and 되돌리기 in the tracker to adjust the count.",
     rowEyebrow: "Row",
     roundEyebrow: "Round",
     rowBadge: "Input",
@@ -124,6 +168,10 @@ const en: Messages = {
     currentStep: "Current step",
     currentRound: "Current round",
     overallProgress: "Overall progress",
+    trackingModeLabel: "Tracking mode",
+    trackingModePattern: "도안 따라 기록",
+    trackingModeProgress: "진행률로 기록",
+    trackingModeCounter: "카운터",
     currentLineTotal: "Current line progress",
     currentStepProgress: "Current step progress",
     stepListTitle: "Current row steps",
@@ -181,6 +229,13 @@ const en: Messages = {
       "Keep a soft running note for reminders, stitch checks, or what to do next.",
     notesPlaceholder: "e.g. Check stitch count before starting the next line",
     activityTitle: "Recent actions",
+    progressPercentLabel: "Progress (%)",
+    progressComplete: "완료",
+    counterTitle: "Total count",
+    counterValue: "Total {count}",
+    nonPatternEditUnavailableTitle: "No pattern editor for this mode",
+    nonPatternEditUnavailableDescription:
+      "This project does not use pattern input, so there are no pattern instructions to edit.",
     completedTitle: "Project complete",
     completedDescription:
       "You have finished tracking the final row or round. Use Undo if you need to step back.",

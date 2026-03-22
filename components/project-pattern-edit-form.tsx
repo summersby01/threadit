@@ -56,6 +56,7 @@ export function ProjectPatternEditForm({ projectId }: { projectId: string }) {
   }
 
   const { name, craftType, structureType, currentRow, isProjectComplete } = project;
+  const isNonPatternMode = project.trackingMode !== "pattern";
   const usesRounds = structureType === "round";
   const usesKnittingRows = craftType === "knitting" && structureType === "row";
   const castOnRow = usesKnittingRows ? rows[0] ?? null : null;
@@ -98,6 +99,42 @@ export function ProjectPatternEditForm({ projectId }: { projectId: string }) {
 
     updateProjectFutureRows(projectId, updates);
     router.push(`/projects/${projectId}`);
+  }
+
+  if (isNonPatternMode) {
+    return (
+      <section className="space-y-7 sm:space-y-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <p className="eyebrow">{messages.tracker.patternEditTitle}</p>
+            <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-thread-900 sm:text-3xl">
+              {name || "-"}
+            </h1>
+            <p className="max-w-2xl text-sm leading-6 text-thread-700">
+              {messages.tracker.nonPatternEditUnavailableDescription}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(`/projects/${projectId}`)}
+            className="pill-button h-11 px-4 hover:border-thread-700/30 hover:bg-white"
+          >
+            {messages.tracker.backToTracker}
+          </button>
+        </div>
+
+        <PageCard>
+          <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
+            <p className="font-medium text-thread-900">
+              {messages.tracker.nonPatternEditUnavailableTitle}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-thread-700">
+              {messages.tracker.nonPatternEditUnavailableDescription}
+            </p>
+          </div>
+        </PageCard>
+      </section>
+    );
   }
 
   return (

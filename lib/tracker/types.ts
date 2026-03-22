@@ -1,5 +1,6 @@
 export type CraftType = "knitting" | "crochet";
 export type StructureType = "row" | "round";
+export type TrackingMode = "pattern" | "progress" | "counter";
 
 export type PatternRow = {
   id: number;
