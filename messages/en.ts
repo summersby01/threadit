@@ -11,6 +11,7 @@ const en: Messages = {
   },
   nav: {
     home: "Home",
+    library: "도안 보관함",
     create: "Create",
   },
   home: {
@@ -260,6 +261,52 @@ const en: Messages = {
     rowLabel: "Row {number}",
     stepLabel: "Step {number}",
     roundLabel: "Round {number}",
+  },
+  library: {
+    libraryEyebrow: "Pattern Library",
+    title: "도안 보관함",
+    description:
+      "Store PDFs, images, links, and YouTube references in one reusable library and connect them to multiple projects.",
+    projectAssetsTitle: "Linked Pattern Assets",
+    projectAssetsDescription:
+      "Select references for this project or add a new one. Assets are saved in the library and can be reused across projects.",
+    linkedAssetsTitle: "Linked Pattern Assets",
+    linkedProjectsTitle: "Linked Projects",
+    noLinkedProjects: "No projects are linked to this asset yet.",
+    assetTitle: "Title",
+    assetTitlePlaceholder: "e.g. Balloon Sleeve Sweater PDF",
+    assetType: "Asset type",
+    assetTypes: {
+      pdf: "PDF",
+      image: "Image",
+      link: "Link",
+      youtube: "YouTube",
+    },
+    assetUrl: "File URL or source link",
+    assetUrlPlaceholder: "https://...",
+    assetCategory: "Category",
+    assetCategoryPlaceholder: "e.g. Sweater",
+    assetTags: "Tags",
+    assetTagsPlaceholder: "e.g. cable, spring, beginner",
+    assetNote: "Note",
+    assetNotePlaceholder: "Add a short note about how you use this asset",
+    addNewAsset: "Add New Asset",
+    cancelAddAsset: "Cancel",
+    saveAsset: "Save Asset",
+    selectAsset: "Select",
+    selectedAsset: "Selected",
+    detailLink: "View Detail",
+    assetDetailEyebrow: "Asset Detail",
+    backToLibrary: "Back to Library",
+    assetNotFoundTitle: "Asset not found",
+    assetNotFoundDescription:
+      "The requested pattern asset is not available in the current library state. Return to the library to open another one.",
+    emptyLibraryDescription:
+      "No pattern assets yet. Add your first PDF, image, link, or YouTube reference.",
+    filterByType: "Type",
+    filterByCategory: "Category",
+    allTypes: "All types",
+    allCategories: "All categories",
   },
 };
 

@@ -9,6 +9,7 @@ const ko = {
   },
   nav: {
     home: "홈",
+    library: "도안 보관함",
     create: "만들기",
   },
   home: {
@@ -255,6 +256,52 @@ const ko = {
     rowLabel: "단 {number}",
     stepLabel: "단계 {number}",
     roundLabel: "라운드 {number}",
+  },
+  library: {
+    libraryEyebrow: "도안 보관함",
+    title: "도안 보관함",
+    description:
+      "PDF, 이미지, 링크, YouTube 참고 자료를 한곳에 저장하고 여러 작품에 연결해 재사용하세요.",
+    projectAssetsTitle: "연결된 도안 자료",
+    projectAssetsDescription:
+      "이 작품에서 참고할 자료를 선택하거나 새로 추가하세요. 자료는 보관함에 저장되고 다른 작품에서도 다시 쓸 수 있습니다.",
+    linkedAssetsTitle: "연결된 도안 자료",
+    linkedProjectsTitle: "연결된 작품",
+    noLinkedProjects: "아직 이 자료를 연결한 작품이 없습니다.",
+    assetTitle: "제목",
+    assetTitlePlaceholder: "예: 벌룬 슬리브 스웨터 PDF",
+    assetType: "자료 유형",
+    assetTypes: {
+      pdf: "PDF",
+      image: "이미지",
+      link: "링크",
+      youtube: "YouTube",
+    },
+    assetUrl: "파일 URL 또는 원본 링크",
+    assetUrlPlaceholder: "https://...",
+    assetCategory: "카테고리",
+    assetCategoryPlaceholder: "예: 스웨터",
+    assetTags: "태그",
+    assetTagsPlaceholder: "예: 꽈배기, 봄, 초급",
+    assetNote: "메모",
+    assetNotePlaceholder: "이 자료를 어떻게 쓰는지 간단히 적어두세요",
+    addNewAsset: "새 자료 추가",
+    cancelAddAsset: "추가 취소",
+    saveAsset: "자료 저장",
+    selectAsset: "선택",
+    selectedAsset: "선택됨",
+    detailLink: "상세 보기",
+    assetDetailEyebrow: "자료 상세",
+    backToLibrary: "보관함으로",
+    assetNotFoundTitle: "자료를 찾을 수 없습니다",
+    assetNotFoundDescription:
+      "요청한 도안 자료가 현재 보관함에 없습니다. 보관함으로 돌아가 다른 자료를 확인하세요.",
+    emptyLibraryDescription:
+      "아직 저장한 도안 자료가 없습니다. 첫 PDF, 이미지, 링크 또는 YouTube 자료를 추가해보세요.",
+    filterByType: "유형",
+    filterByCategory: "카테고리",
+    allTypes: "모든 유형",
+    allCategories: "모든 카테고리",
   },
 } as const;
 

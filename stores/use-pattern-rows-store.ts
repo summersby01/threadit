@@ -17,6 +17,28 @@ export type {
   TrackingMode,
 } from "@/lib/tracker/types";
 
+export type PatternAssetType = "pdf" | "image" | "link" | "youtube";
+
+export type PatternAsset = {
+  id: string;
+  title: string;
+  type: PatternAssetType;
+  sourceUrl: string;
+  category: string;
+  tags: string[];
+  note: string;
+  createdAt: string;
+};
+
+export type PatternAssetInput = {
+  title: string;
+  type: PatternAssetType;
+  sourceUrl: string;
+  category: string;
+  tags: string[];
+  note?: string;
+};
+
 type MemoryStorageValue = Record<string, string>;
 
 type StoredActivityLogEntry = {
@@ -72,6 +94,7 @@ export type TrackerProject = {
   completedAt: string | null;
   isProjectComplete: boolean;
   notes: string;
+  patternAssetIds: string[];
   activityLog: {
     id: string;
     label: string;
@@ -90,18 +113,21 @@ type DraftProject = {
   startSide: "RS" | "WS";
   rows: PatternRow[];
   progressTargetCount: number;
+  patternAssetIds: string[];
 };
 
 type PatternRowsStore = {
   currentUserId: string | null;
   draftProject: DraftProject;
   projects: TrackerProject[];
+  patternAssets: PatternAsset[];
   selectedProjectId: string | null;
   setDraftProjectName: (projectName: string) => void;
   setDraftCraftType: (craftType: CraftType) => void;
   setDraftStructureType: (structureType: StructureType) => void;
   setDraftTrackingMode: (trackingMode: TrackingMode) => void;
   setDraftProgressTargetCount: (count: number) => void;
+  setDraftPatternAssetIds: (ids: string[]) => void;
   setDraftStartDirection: (direction: "right" | "left") => void;
   setDraftStartSide: (side: "RS" | "WS") => void;
   addDraftRow: () => void;
@@ -117,12 +143,14 @@ type PatternRowsStore = {
     id: string,
     updates: Array<{ id: number; text: string }>,
   ) => void;
+  setProjectPatternAssetIds: (id: string, assetIds: string[]) => void;
   setProjectProgressTargetCount: (id: string, count: number) => void;
   markProjectComplete: (id: string) => void;
   setProjectNotes: (id: string, notes: string) => void;
   advanceProjectSteps: (id: string, count: number) => void;
   undoProjectStep: (id: string) => void;
   completeProjectLine: (id: string) => void;
+  addPatternAsset: (input: PatternAssetInput) => string | null;
 };
 
 const INITIAL_ROW_COUNT = 3;
@@ -146,6 +174,7 @@ function buildDraftProject(): DraftProject {
     startSide: "RS",
     rows: buildInitialRows(),
     progressTargetCount: 20,
+    patternAssetIds: [],
   };
 }
 
@@ -194,6 +223,10 @@ function buildProjectId(): string {
 
 function buildActivityId(): string {
   return `activity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildPatternAssetId(): string {
+  return `asset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function appendActivity(
@@ -290,6 +323,67 @@ function normalizeProgressTargetCount(value: number): number {
   return Math.max(0, Math.floor(value));
 }
 
+function sanitizePatternAssetType(value: unknown): PatternAssetType {
+  return value === "pdf" || value === "image" || value === "youtube" ? value : "link";
+}
+
+function sanitizePatternAssetIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function sanitizePatternAssetTags(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function sanitizePatternAssets(assets: unknown): PatternAsset[] {
+  if (!Array.isArray(assets)) {
+    return [];
+  }
+
+  return assets
+    .map((asset, index) => {
+      const currentAsset = asset as Partial<PatternAsset> | null | undefined;
+
+      if (
+        !currentAsset ||
+        typeof currentAsset.title !== "string" ||
+        typeof currentAsset.sourceUrl !== "string"
+      ) {
+        return null;
+      }
+
+      return {
+        id:
+          typeof currentAsset.id === "string" && currentAsset.id.length > 0
+            ? currentAsset.id
+            : `asset-migrated-${index}`,
+        title: currentAsset.title.trim() || "Untitled Asset",
+        type: sanitizePatternAssetType(currentAsset.type),
+        sourceUrl: currentAsset.sourceUrl,
+        category:
+          typeof currentAsset.category === "string" ? currentAsset.category.trim() : "",
+        tags: sanitizePatternAssetTags(currentAsset.tags),
+        note: typeof currentAsset.note === "string" ? currentAsset.note : "",
+        createdAt:
+          typeof currentAsset.createdAt === "string" && currentAsset.createdAt.length > 0
+            ? currentAsset.createdAt
+            : new Date(0).toISOString(),
+      } satisfies PatternAsset;
+    })
+    .filter((asset): asset is PatternAsset => asset !== null);
+}
+
 function normalizeProgressProject(
   current: number,
   target: number,
@@ -356,6 +450,7 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
       draftProject: buildDraftProject(),
       currentUserId: null,
       projects: [],
+      patternAssets: [],
       selectedProjectId: null,
       setDraftProjectName: (name) =>
         set((state) => ({
@@ -418,6 +513,13 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
           draftProject: {
             ...state.draftProject,
             progressTargetCount: normalizeProgressTargetCount(count),
+          },
+        })),
+      setDraftPatternAssetIds: (patternAssetIds) =>
+        set((state) => ({
+          draftProject: {
+            ...state.draftProject,
+            patternAssetIds,
           },
         })),
       setDraftStartDirection: (startDirection) =>
@@ -589,6 +691,7 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             completedAt: cursor.completedAt,
             isProjectComplete: cursor.isProjectComplete,
             notes: "",
+            patternAssetIds: state.draftProject.patternAssetIds,
             activityLog: [],
             createdAt: timestamp,
             updatedAt: timestamp,
@@ -650,6 +753,7 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             completedAt: cursor.completedAt,
             isProjectComplete: cursor.isProjectComplete,
             notes: "",
+            patternAssetIds: sourceProject.patternAssetIds,
             activityLog: [],
             createdAt: timestamp,
             updatedAt: timestamp,
@@ -720,6 +824,15 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               activityLog: appendActivity(project, "Edit Future Rows"),
             };
           }),
+          selectedProjectId: id,
+        })),
+      setProjectPatternAssetIds: (id, patternAssetIds) =>
+        set((state) => ({
+          projects: updateProjectById(state.projects, id, (project) => ({
+            ...project,
+            patternAssetIds,
+            activityLog: appendActivity(project, "Update Pattern Assets"),
+          })),
           selectedProjectId: id,
         })),
       setProjectNotes: (id, notes) =>
@@ -888,15 +1001,47 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
           }),
           selectedProjectId: id,
         })),
+      addPatternAsset: (input) => {
+        let createdAssetId: string | null = null;
+
+        set((state) => {
+          const title = input.title.trim();
+          const sourceUrl = input.sourceUrl.trim();
+
+          if (!title || !sourceUrl) {
+            return state;
+          }
+
+          const nextAsset: PatternAsset = {
+            id: buildPatternAssetId(),
+            title,
+            type: input.type,
+            sourceUrl,
+            category: input.category.trim(),
+            tags: input.tags.map((tag) => tag.trim()).filter(Boolean),
+            note: input.note?.trim() ?? "",
+            createdAt: new Date().toISOString(),
+          };
+
+          createdAssetId = nextAsset.id;
+
+          return {
+            patternAssets: [nextAsset, ...state.patternAssets],
+          };
+        });
+
+        return createdAssetId;
+      },
     }),
     {
       name: "threadit-projects-store",
-      version: 7,
+      version: 8,
       storage: createJSONStorage(getSafeStorage),
       partialize: (state) => ({
         currentUserId: state.currentUserId,
         draftProject: state.draftProject,
         projects: state.projects,
+        patternAssets: state.patternAssets,
         selectedProjectId: state.selectedProjectId,
       }),
       migrate: (persistedState) => {
@@ -930,8 +1075,13 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
                     }).simpleTargetCount ??
                     20,
                 ),
+                patternAssetIds: sanitizePatternAssetIds(
+                  (state.draftProject as DraftProject & { patternAssetIds?: string[] })
+                    .patternAssetIds,
+                ),
               }
             : buildDraftProject(),
+          patternAssets: sanitizePatternAssets(state?.patternAssets),
           projects:
             state?.projects?.map((project) => {
               const trackingMode = normalizeStoredTrackingMode(
@@ -1014,13 +1164,21 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
                       ? progressCursor.isProjectComplete
                       : counterCursor.isProjectComplete,
                 notes: project.notes ?? "",
+                patternAssetIds: sanitizePatternAssetIds(
+                  (project as TrackerProject & { patternAssetIds?: string[] })
+                    .patternAssetIds,
+                ),
                 activityLog: sanitizeActivityLogEntries(project.activityLog),
               };
             }) ?? [],
           selectedProjectId: state?.selectedProjectId ?? null,
         } satisfies Pick<
           PatternRowsStore,
-          "currentUserId" | "draftProject" | "projects" | "selectedProjectId"
+          | "currentUserId"
+          | "draftProject"
+          | "projects"
+          | "patternAssets"
+          | "selectedProjectId"
         >;
       },
     },

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/i18n-provider";
 import { PageCard } from "@/components/page-card";
+import { PatternAssetCard } from "@/components/pattern-asset-card";
 import { usePatternRowsStore } from "@/stores/use-pattern-rows-store";
 
 export function ProjectTrackerView({ projectId }: { projectId: string }) {
@@ -12,6 +13,7 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   const project = usePatternRowsStore((state) =>
     state.projects.find((item) => item.id === projectId),
   );
+  const patternAssets = usePatternRowsStore((state) => state.patternAssets);
   const selectProject = usePatternRowsStore((state) => state.selectProject);
   const advanceProjectSteps = usePatternRowsStore(
     (state) => state.advanceProjectSteps,
@@ -77,7 +79,11 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
     notes,
     progressTargetCount,
     countValue,
+    patternAssetIds,
   } = project;
+  const linkedPatternAssets = patternAssets.filter((asset) =>
+    patternAssetIds.includes(asset.id),
+  );
   const rows = Array.isArray(project.rows) ? project.rows : [];
   const activityLog = Array.isArray(project.activityLog) ? project.activityLog : [];
   const [isEditingProgressTarget, setIsEditingProgressTarget] = useState(false);
@@ -367,6 +373,24 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
           </div>
         </PageCard>
 
+        {linkedPatternAssets.length > 0 ? (
+          <PageCard>
+            <div className="space-y-4">
+              <div>
+                <p className="eyebrow">{messages.library.libraryEyebrow}</p>
+                <h3 className="font-serif text-2xl text-thread-900">
+                  {messages.library.linkedAssetsTitle}
+                </h3>
+              </div>
+              <div className="grid gap-3">
+                {linkedPatternAssets.map((asset) => (
+                  <PatternAssetCard key={asset.id} asset={asset} />
+                ))}
+              </div>
+            </div>
+          </PageCard>
+        ) : null}
+
         <PageCard>
           <div className="space-y-6">
             <div>
@@ -507,6 +531,24 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
             </button>
           </div>
         </PageCard>
+
+        {linkedPatternAssets.length > 0 ? (
+          <PageCard>
+            <div className="space-y-4">
+              <div>
+                <p className="eyebrow">{messages.library.libraryEyebrow}</p>
+                <h3 className="font-serif text-2xl text-thread-900">
+                  {messages.library.linkedAssetsTitle}
+                </h3>
+              </div>
+              <div className="grid gap-3">
+                {linkedPatternAssets.map((asset) => (
+                  <PatternAssetCard key={asset.id} asset={asset} />
+                ))}
+              </div>
+            </div>
+          </PageCard>
+        ) : null}
 
         <PageCard>
           <div className="space-y-6">
@@ -1120,6 +1162,24 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
             </div>
           )}
         </PageCard>
+
+        {linkedPatternAssets.length > 0 ? (
+          <PageCard>
+            <div className="space-y-4">
+              <div>
+                <p className="eyebrow">{messages.library.libraryEyebrow}</p>
+                <h3 className="font-serif text-2xl text-thread-900">
+                  {messages.library.linkedAssetsTitle}
+                </h3>
+              </div>
+              <div className="grid gap-3">
+                {linkedPatternAssets.map((asset) => (
+                  <PatternAssetCard key={asset.id} asset={asset} />
+                ))}
+              </div>
+            </div>
+          </PageCard>
+        ) : null}
       </div>
     </section>
   );

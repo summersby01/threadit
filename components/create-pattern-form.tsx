@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/i18n-provider";
 import { PageCard } from "@/components/page-card";
+import { PatternAssetPicker } from "@/components/pattern-asset-picker";
 import { usePatternRowsStore } from "@/stores/use-pattern-rows-store";
 
 type PatternHelperType =
@@ -29,6 +30,9 @@ export function CreatePatternForm() {
   const setProgressTargetCount = usePatternRowsStore(
     (state) => state.setDraftProgressTargetCount,
   );
+  const setDraftPatternAssetIds = usePatternRowsStore(
+    (state) => state.setDraftPatternAssetIds,
+  );
   const setStartDirection = usePatternRowsStore(
     (state) => state.setDraftStartDirection,
   );
@@ -46,6 +50,7 @@ export function CreatePatternForm() {
   const startSide = draftProject.startSide;
   const rows = draftProject.rows;
   const progressTargetCount = draftProject.progressTargetCount;
+  const patternAssetIds = draftProject.patternAssetIds;
   const isCrochet = craftType === "crochet";
   const isKnitting = craftType === "knitting";
   const usesRounds = structureType === "round";
@@ -833,6 +838,13 @@ export function CreatePatternForm() {
           </div>
         </PageCard>
       )}
+
+      <PageCard>
+        <PatternAssetPicker
+          selectedAssetIds={patternAssetIds}
+          onChange={setDraftPatternAssetIds}
+        />
+      </PageCard>
 
       <div className="flex justify-end">
         <button
