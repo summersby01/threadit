@@ -68,6 +68,8 @@ export type TrackerProject = {
   countValue: number;
   currentRow: number;
   currentStep: number;
+  isCompleted: boolean;
+  completedAt: string | null;
   isProjectComplete: boolean;
   notes: string;
   activityLog: {
@@ -115,6 +117,8 @@ type PatternRowsStore = {
     id: string,
     updates: Array<{ id: number; text: string }>,
   ) => void;
+  setProjectProgressTargetCount: (id: string, count: number) => void;
+  markProjectComplete: (id: string) => void;
   setProjectNotes: (id: string, notes: string) => void;
   advanceProjectSteps: (id: string, count: number) => void;
   undoProjectStep: (id: string) => void;
@@ -291,7 +295,12 @@ function normalizeProgressProject(
   target: number,
 ): Pick<
   TrackerProject,
-  "currentRow" | "currentStep" | "countValue" | "isProjectComplete"
+  | "currentRow"
+  | "currentStep"
+  | "countValue"
+  | "isCompleted"
+  | "completedAt"
+  | "isProjectComplete"
 > {
   const safeTarget = normalizeProgressTargetCount(target);
   const safeCurrent = Math.min(Math.max(0, Math.floor(current)), safeTarget);
@@ -300,6 +309,8 @@ function normalizeProgressProject(
     currentRow: safeCurrent,
     currentStep: 0,
     countValue: 0,
+    isCompleted: safeTarget > 0 && safeCurrent >= safeTarget,
+    completedAt: safeTarget > 0 && safeCurrent >= safeTarget ? new Date().toISOString() : null,
     isProjectComplete: safeTarget > 0 && safeCurrent >= safeTarget,
   };
 }
@@ -308,7 +319,12 @@ function normalizeCounterProject(
   count: number,
 ): Pick<
   TrackerProject,
-  "currentRow" | "currentStep" | "countValue" | "isProjectComplete"
+  | "currentRow"
+  | "currentStep"
+  | "countValue"
+  | "isCompleted"
+  | "completedAt"
+  | "isProjectComplete"
 > {
   const safeCount = Math.max(0, Math.floor(Number.isFinite(count) ? count : 0));
 
@@ -316,6 +332,8 @@ function normalizeCounterProject(
     currentRow: 0,
     currentStep: 0,
     countValue: safeCount,
+    isCompleted: false,
+    completedAt: null,
     isProjectComplete: false,
   };
 }
@@ -546,6 +564,8 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               ? {
                   ...normalizeProjectCursor(rows, 0, 0, false),
                   countValue: 0,
+                  isCompleted: false,
+                  completedAt: null,
                 }
               : trackingMode === "progress"
                 ? normalizeProgressProject(0, progressTargetCount)
@@ -565,6 +585,8 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             countValue: cursor.countValue,
             currentRow: cursor.currentRow,
             currentStep: cursor.currentStep,
+            isCompleted: cursor.isCompleted,
+            completedAt: cursor.completedAt,
             isProjectComplete: cursor.isProjectComplete,
             notes: "",
             activityLog: [],
@@ -601,6 +623,8 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
           const patternCursor = {
             ...normalizeProjectCursor(rows, 0, 0, false),
             countValue: 0,
+            isCompleted: false,
+            completedAt: null,
           };
           const progressCursor = normalizeProgressProject(
             0,
@@ -622,6 +646,8 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             countValue: cursor.countValue,
             currentRow: cursor.currentRow,
             currentStep: cursor.currentStep,
+            isCompleted: cursor.isCompleted,
+            completedAt: cursor.completedAt,
             isProjectComplete: cursor.isProjectComplete,
             notes: "",
             activityLog: [],
@@ -710,10 +736,10 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
             if (project.trackingMode === "progress") {
               return {
                 ...project,
-                ...normalizeProgressProject(
-                  project.currentRow + count,
-                  project.progressTargetCount,
-                ),
+              ...normalizeProgressProject(
+                project.currentRow + count,
+                project.progressTargetCount,
+              ),
                 activityLog:
                   count > 0
                     ? appendActivity(project, `+${count}`)
@@ -732,15 +758,19 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               };
             }
 
+            const nextCursor = getNextCursor(
+              project.rows,
+              project.currentRow,
+              project.currentStep,
+              count,
+              project.isProjectComplete,
+            );
+
             return {
               ...project,
-              ...getNextCursor(
-                project.rows,
-                project.currentRow,
-                project.currentStep,
-                count,
-                project.isProjectComplete,
-              ),
+              ...nextCursor,
+              isCompleted: nextCursor.isProjectComplete,
+              completedAt: nextCursor.isProjectComplete ? new Date().toISOString() : null,
               activityLog:
                 count > 0
                   ? appendActivity(project, `+${count}`)
@@ -771,15 +801,19 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               };
             }
 
+            const nextCursor = getNextCursor(
+              project.rows,
+              project.currentRow,
+              project.currentStep,
+              -1,
+              project.isProjectComplete,
+            );
+
             return {
               ...project,
-              ...getNextCursor(
-                project.rows,
-                project.currentRow,
-                project.currentStep,
-                -1,
-                project.isProjectComplete,
-              ),
+              ...nextCursor,
+              isCompleted: nextCursor.isProjectComplete,
+              completedAt: nextCursor.isProjectComplete ? project.completedAt : null,
               activityLog: appendActivity(project, "Undo"),
             };
           }),
@@ -803,9 +837,13 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
               return project;
             }
 
+            const nextCursor = completeCurrentLine(project.rows, project.currentRow);
+
             return {
               ...project,
-              ...completeCurrentLine(project.rows, project.currentRow),
+              ...nextCursor,
+              isCompleted: nextCursor.isProjectComplete,
+              completedAt: nextCursor.isProjectComplete ? new Date().toISOString() : null,
               activityLog: appendActivity(
                 project,
                 project.structureType === "round" ? "Complete Round" : "Complete Row",
@@ -814,10 +852,46 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
           }),
           selectedProjectId: id,
         })),
+      setProjectProgressTargetCount: (id, count) =>
+        set((state) => ({
+          projects: updateProjectById(state.projects, id, (project) => {
+            if (project.trackingMode !== "progress") {
+              return project;
+            }
+
+            const normalizedCount = normalizeProgressTargetCount(count);
+            const progress = normalizeProgressProject(project.currentRow, normalizedCount);
+
+            return {
+              ...project,
+              progressTargetCount: normalizedCount,
+              ...progress,
+              activityLog: appendActivity(project, `Set Total ${normalizedCount}`),
+            };
+          }),
+          selectedProjectId: id,
+        })),
+      markProjectComplete: (id) =>
+        set((state) => ({
+          projects: updateProjectById(state.projects, id, (project) => {
+            if (project.trackingMode !== "counter") {
+              return project;
+            }
+
+            return {
+              ...project,
+              isCompleted: true,
+              isProjectComplete: true,
+              completedAt: new Date().toISOString(),
+              activityLog: appendActivity(project, "Mark Complete"),
+            };
+          }),
+          selectedProjectId: id,
+        })),
     }),
     {
       name: "threadit-projects-store",
-      version: 6,
+      version: 7,
       storage: createJSONStorage(getSafeStorage),
       partialize: (state) => ({
         currentUserId: state.currentUserId,
@@ -920,6 +994,19 @@ export const usePatternRowsStore = create<PatternRowsStore>()(
                     : trackingMode === "progress"
                       ? progressCursor.currentStep
                       : counterCursor.currentStep,
+                isCompleted:
+                  (project as TrackerProject & { isCompleted?: boolean }).isCompleted ??
+                  (trackingMode === "pattern"
+                    ? patternCursor.isProjectComplete
+                    : trackingMode === "progress"
+                      ? progressCursor.isCompleted
+                      : counterCursor.isCompleted),
+                completedAt:
+                  (project as TrackerProject & { completedAt?: string | null }).completedAt ??
+                  ((project as TrackerProject & { isCompleted?: boolean }).isCompleted === true
+                    ? new Date().toISOString()
+                    : null) ??
+                  null,
                 isProjectComplete:
                   trackingMode === "pattern"
                     ? patternCursor.isProjectComplete

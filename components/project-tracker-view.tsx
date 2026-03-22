@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/i18n-provider";
 import { PageCard } from "@/components/page-card";
@@ -19,6 +19,12 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   const undoProjectStep = usePatternRowsStore((state) => state.undoProjectStep);
   const completeProjectLine = usePatternRowsStore(
     (state) => state.completeProjectLine,
+  );
+  const setProjectProgressTargetCount = usePatternRowsStore(
+    (state) => state.setProjectProgressTargetCount,
+  );
+  const markProjectComplete = usePatternRowsStore(
+    (state) => state.markProjectComplete,
   );
   const toggleProjectDirection = usePatternRowsStore(
     (state) => state.toggleProjectDirection,
@@ -65,6 +71,8 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
     startSide,
     currentRow,
     currentStep,
+    isCompleted,
+    completedAt,
     isProjectComplete,
     notes,
     progressTargetCount,
@@ -72,6 +80,15 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
   } = project;
   const rows = Array.isArray(project.rows) ? project.rows : [];
   const activityLog = Array.isArray(project.activityLog) ? project.activityLog : [];
+  const [isEditingProgressTarget, setIsEditingProgressTarget] = useState(false);
+  const [progressTargetDraft, setProgressTargetDraft] = useState(
+    progressTargetCount > 0 ? String(progressTargetCount) : "",
+  );
+
+  useEffect(() => {
+    setProgressTargetDraft(progressTargetCount > 0 ? String(progressTargetCount) : "");
+    setIsEditingProgressTarget(false);
+  }, [progressTargetCount, projectId]);
   const isPatternMode = trackingMode === "pattern";
   const isProgressMode = trackingMode === "progress";
   const isCounterMode = trackingMode === "counter";
@@ -188,6 +205,25 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
     startDirection === "right" ? "←로 변경" : "→로 변경";
   const nextSideLabel = startSide === "RS" ? "WS로 변경" : "RS로 변경";
 
+  function handleSaveProgressTarget() {
+    const nextCount = Number.parseInt(progressTargetDraft || "0", 10);
+
+    if (Number.isNaN(nextCount) || nextCount <= 0) {
+      return;
+    }
+
+    setProjectProgressTargetCount(projectId, nextCount);
+    setIsEditingProgressTarget(false);
+  }
+
+  function handleCounterComplete() {
+    if (!window.confirm(messages.tracker.counterCompleteConfirm)) {
+      return;
+    }
+
+    markProjectComplete(projectId);
+  }
+
   if (isProgressMode) {
     return (
       <section className="space-y-7 sm:space-y-8">
@@ -235,9 +271,50 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                     ? messages.create.progressTotalRoundsLabel
                     : messages.create.progressTotalRowsLabel}
                 </p>
-                <p className="mt-3 font-serif text-4xl text-thread-900">
-                  {progressTargetCount}
-                </p>
+                {isEditingProgressTarget ? (
+                  <div className="mt-3 space-y-3">
+                    <input
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      value={progressTargetDraft}
+                      onChange={(event) => setProgressTargetDraft(event.target.value)}
+                      className="h-11 w-full rounded-[1rem] border border-cream-200 bg-white/80 px-4 text-sm text-thread-900 outline-none transition focus:border-sand-100 focus:bg-white"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveProgressTarget}
+                        className="pill-button h-10 px-4 hover:border-thread-700/30 hover:bg-white"
+                      >
+                        {messages.tracker.saveTotal}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProgressTargetDraft(String(progressTargetCount));
+                          setIsEditingProgressTarget(false);
+                        }}
+                        className="pill-button h-10 px-4 hover:border-thread-700/30 hover:bg-white"
+                      >
+                        {messages.tracker.cancelEdit}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-2">
+                    <p className="font-serif text-4xl text-thread-900">
+                      {progressTargetCount}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProgressTarget(true)}
+                      className="inline-flex h-9 items-center rounded-full border border-cream-200 bg-white/80 px-3 text-sm text-thread-700 transition hover:border-thread-700/30 hover:bg-white"
+                    >
+                      {messages.tracker.editTotal}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="rounded-[1.5rem] border border-cream-200 bg-white/65 p-5">
                 <p className="eyebrow">{messages.tracker.progressPercentLabel}</p>
@@ -246,7 +323,7 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                     {overallProgressPercent}%
                   </p>
                   <p className="text-sm font-medium text-thread-900">
-                    {currentRow} / {progressTargetCount}
+                    {currentRow} / {progressTargetCount} [{messages.tracker.editTotal}]
                   </p>
                   <div className="h-2 rounded-full bg-cream-200/80">
                     <div
@@ -365,6 +442,25 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
 
         <PageCard>
           <div className="space-y-5">
+            {isCompleted ? (
+              <div className="rounded-[1.5rem] border border-cream-200 bg-oat-100 p-5">
+                <p className="font-medium text-thread-900">
+                  {messages.tracker.counterCompletedBadge}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-thread-700">
+                  {format(messages.tracker.counterValue, {
+                    count: String(countValue),
+                  })}
+                </p>
+                {completedAt ? (
+                  <p className="mt-2 text-xs text-thread-700">
+                    {messages.tracker.completedAtLabel}:{" "}
+                    {new Date(completedAt).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="rounded-[1.75rem] border border-sand-100 bg-oat-100/70 p-5 sm:p-6">
               <p className="eyebrow">{messages.tracker.counterTitle}</p>
               <p className="mt-3 font-serif text-4xl text-thread-900">
@@ -378,14 +474,16 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
               <button
                 type="button"
                 onClick={() => advanceProjectSteps(projectId, 1)}
-                className="pill-button hover:border-thread-700/30 hover:bg-white"
+                disabled={isCompleted}
+                className="pill-button hover:border-thread-700/30 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {messages.tracker.plusOne}
               </button>
               <button
                 type="button"
                 onClick={() => advanceProjectSteps(projectId, 5)}
-                className="pill-button hover:border-thread-700/30 hover:bg-white"
+                disabled={isCompleted}
+                className="pill-button hover:border-thread-700/30 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {messages.tracker.plusFive}
               </button>
@@ -397,6 +495,16 @@ export function ProjectTrackerView({ projectId }: { projectId: string }) {
                 {messages.tracker.undo}
               </button>
             </div>
+            <button
+              type="button"
+              onClick={handleCounterComplete}
+              disabled={isCompleted}
+              className="pill-button-accent px-5 hover:bg-sand-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isCompleted
+                ? messages.tracker.counterCompletedBadge
+                : messages.tracker.counterMarkComplete}
+            </button>
           </div>
         </PageCard>
 
