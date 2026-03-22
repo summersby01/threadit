@@ -19,25 +19,31 @@ export function SiteHeader() {
               fill="none"
             >
               <path
-                d="M6 10.5C8.2 8.7 11.2 8 14.6 8C17.2 8 19.1 8.46 20.8 9.12C22.45 9.76 24.08 10.08 26 9.15"
-                stroke="#6F6257"
-                strokeWidth="1.9"
+                d="M7 11.2C9.15 9.45 12.25 8.5 16.05 8.5C19.55 8.5 22.45 9.23 25.15 10.55"
+                stroke="#6D5A4E"
+                strokeWidth="2.15"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
-                d="M15.7 9.35C15.5 12.55 15.5 15.8 15.72 19.05C15.87 21.33 15.65 23.12 14.95 24.58C14.42 25.69 13.64 26.57 12.55 27.35"
-                stroke="#6F6257"
-                strokeWidth="1.9"
+                d="M16.65 8.7C16.2 12.45 16.15 16.35 16.45 20.25C16.63 22.52 16.15 24.43 15.02 26.12"
+                stroke="#6D5A4E"
+                strokeWidth="2.15"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
-                d="M14.55 8.12C15.32 8.84 15.88 9.22 16.88 9.56"
-                stroke="#6F6257"
-                strokeWidth="1.9"
+                d="M14.25 8.55C15.2 9.55 16.18 10.2 17.62 10.75"
+                stroke="#6D5A4E"
+                strokeWidth="2.15"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+              />
+              <path
+                d="M7.2 11.1C6.2 11.68 5.42 12.48 4.9 13.45"
+                stroke="#BFAE9F"
+                strokeWidth="1"
+                strokeLinecap="round"
               />
             </svg>
           </div>

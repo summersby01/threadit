@@ -1,6 +1,7 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="208" fill="#F3E9DC"/>
-  <path d="M134 190C169 161 215 148 268 148C307 148 337 155 364 166C388 175 412 180 434 165" stroke="#6F6257" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M251 164C247 220 247 278 252 337C255 376 247 410 231 439C219 460 202 477 178 494" stroke="#6F6257" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M233 151C247 165 260 174 280 182" stroke="#6F6257" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="104" y="104" width="816" height="816" rx="208" fill="#F4EBDD"/>
+  <path d="M282 365C334 323 408 300 499 300C585 300 657 318 726 354" stroke="#6D5A4E" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M536 304C523 428 522 554 534 676C540 746 521 802 485 846" stroke="#6D5A4E" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M463 300C491 330 524 351 568 365" stroke="#6D5A4E" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M286 362C254 378 228 402 209 434" stroke="#BFAE9F" stroke-width="18" stroke-linecap="round"/>
 </svg>
